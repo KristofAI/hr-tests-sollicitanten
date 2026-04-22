@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Hard Skills — Sociale Wetgeving — United Consulting</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --charcoal: #434A55;
+    --charcoal-dark: #2e333c;
+    --light: #FAFAFA;
+    --border: #E3E7EE;
+    --border-mid: #D8DCE3;
+    --text: #424B55;
+    --muted: #888;
+    --accent-bg: #EAEDF2;
+    --correct: #2e7d52;
+    --correct-bg: #eaf4ee;
+    --wrong: #a0341e;
+    --wrong-bg: #fdf0ed;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Montserrat', sans-serif;
+    background: #F5F6F8;
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--charcoal);
+    padding: 0 2.5rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-brand { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { width: 22px; height: 22px; background: #fff; opacity: 0.9; }
+  .topbar-name {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 3px; color: #fff;
+  }
+  .topbar-progress { display: flex; align-items: center; gap: 10px; }
+  .progress-label {
+    font-size: 10px; color: rgba(255,255,255,0.5);
+    text-transform: uppercase; letter-spacing: 1.5px;
+  }
+  .progress-bar-wrap { width: 140px; height: 3px; background: rgba(255,255,255,0.15); }
+  .progress-bar-fill { height: 100%; background: #fff; width: 0%; transition: width 0.4s ease; }
+  .progress-count {
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7);
+    min-width: 36px; text-align: right;
+  }
+
+  /* ── LAYOUT ── */
+  .page-wrap { max-width: 780px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── WELCOME SCREEN ── */
+  .welcome-card {
+    background: var(--charcoal);
+    padding: 3rem 2.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .welcome-card .tag {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2.5px; color: rgba(255,255,255,0.45); margin-bottom: 12px;
+  }
+  .welcome-card h1 {
+    font-size: 26px; font-weight: 300; text-transform: uppercase;
+    letter-spacing: 2px; color: #fff; margin-bottom: 8px; line-height: 1.3;
+  }
+  .welcome-card h1 strong { font-weight: 700; }
+  .welcome-card p {
+    font-size: 13px; color: rgba(255,255,255,0.7);
+    margin-top: 1.5rem; line-height: 1.7;
+  }
+  .welcome-meta {
+    display: flex; gap: 2.5rem; margin-top: 2rem;
+    padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.12);
+  }
+  .welcome-meta-item .val { font-size: 22px; font-weight: 700; color: #fff; }
+  .welcome-meta-item .lbl {
+    font-size: 10px; color: rgba(255,255,255,0.45);
+    text-transform: uppercase; letter-spacing: 1px; margin-top: 3px;
+  }
+
+  .start-card {
+    background: #fff; border: 1px solid var(--border);
+    padding: 2rem 2.5rem;
+  }
+  .start-card label {
+    display: block; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--charcoal); margin-bottom: 10px;
+  }
+  .start-card input {
+    width: 100%; border: none; border-bottom: 2px solid var(--border-mid);
+    padding: 10px 0; font-family: 'Montserrat', sans-serif; font-size: 15px;
+    color: var(--text); background: transparent; outline: none;
+    transition: border-color 0.2s;
+  }
+  .start-card input:focus { border-bottom-color: var(--charcoal); }
+  .start-card input::placeholder { color: #ccc; }
+  .start-actions {
+    margin-top: 2rem; display: flex; justify-content: flex-end; align-items: center; gap: 1rem;
+  }
+  .start-error { font-size: 11px; color: var(--wrong); display: none; }
+  .start-error.show { display: block; }
+
+  /* ── QUESTION CARD ── */
+  .question-card {
+    background: #fff; border: 1px solid var(--border);
+    margin-bottom: 1.25rem; border-top: 3px solid var(--border);
+    transition: border-top-color 0.3s;
+  }
+  .question-card.answered { border-top-color: var(--charcoal); }
+  .question-card.correct-card { border-top-color: var(--correct); }
+  .question-card.wrong-card { border-top-color: var(--wrong); }
+
+  .question-header {
+    display: flex; align-items: flex-start; gap: 1rem;
+    padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+  }
+  .q-num {
+    font-size: 10px; font-weight: 700; color: var(--charcoal);
+    background: var(--accent-bg); padding: 3px 8px; letter-spacing: 1px;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .q-text { font-size: 13px; font-weight: 600; color: var(--charcoal); line-height: 1.55; }
+
+  .options-list {
+    padding: 0.75rem 1.5rem 1.25rem; display: flex;
+    flex-direction: column; gap: 0.5rem;
+  }
+
+  .option {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px; cursor: pointer; border: 1px solid var(--border);
+    transition: background 0.15s, border-color 0.15s; user-select: none;
+  }
+  .option:hover { background: var(--accent-bg); border-color: var(--border-mid); }
+  .option input[type="radio"] { display: none; }
+
+  .option-key {
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    width: 18px; height: 18px; border: 1.5px solid var(--border-mid);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px; transition: all 0.15s;
+  }
+  .option-text { font-size: 12.5px; color: var(--text); line-height: 1.5; }
+
+  .option.selected { background: var(--accent-bg); border-color: var(--charcoal); }
+  .option.selected .option-key {
+    background: var(--charcoal); border-color: var(--charcoal); color: #fff;
+  }
+
+  .option.correct-answer { background: var(--correct-bg); border-color: var(--correct); }
+  .option.correct-answer .option-key {
+    background: var(--correct); border-color: var(--correct); color: #fff;
+  }
+  .option.wrong-answer { background: var(--wrong-bg); border-color: var(--wrong); }
+  .option.wrong-answer .option-key {
+    background: var(--wrong); border-color: var(--wrong); color: #fff;
+  }
+  .option.disabled { cursor: default; pointer-events: none; }
+  .option.faded { opacity: 0.4; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    background: var(--charcoal); color: #fff; border: none;
+    padding: 14px 40px; font-family: 'Montserrat', sans-serif;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2.5px; cursor: pointer; transition: background 0.2s;
+  }
+  .btn:hover { background: var(--charcoal-dark); }
+  .btn:disabled { background: var(--border-mid); cursor: not-allowed; }
+
+  /* ── SUBMIT SECTION ── */
+  .submit-section {
+    margin-top: 2rem; display: flex; flex-direction: column;
+    align-items: flex-end; gap: 10px;
+  }
+  .submit-note { font-size: 11px; color: var(--muted); }
+
+  /* ── RESULTS CARD ── */
+  .results-card {
+    background: var(--charcoal); padding: 2.5rem; margin-bottom: 1.5rem;
+  }
+  .results-card .r-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; color: rgba(255,255,255,0.45); margin-bottom: 8px;
+  }
+  .results-card .r-score { font-size: 48px; font-weight: 700; color: #fff; line-height: 1; }
+  .results-card .r-sub { font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 6px; }
+  .results-card .r-message {
+    font-size: 13px; color: rgba(255,255,255,0.8);
+    margin-top: 1.25rem; padding-top: 1.25rem;
+    border-top: 1px solid rgba(255,255,255,0.12); line-height: 1.6;
+  }
+  .r-grid {
+    display: grid; grid-template-columns: repeat(15, 1fr);
+    gap: 4px; margin-top: 1.5rem;
+  }
+  .r-dot { height: 6px; background: rgba(255,255,255,0.2); }
+  .r-dot.ok { background: rgba(255,255,255,0.85); }
+
+  .email-status {
+    margin-top: 1.25rem; font-size: 11px; color: rgba(255,255,255,0.5);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .email-status.sent { color: rgba(180,240,200,0.8); }
+  .email-status.error { color: rgba(255,180,160,0.8); }
+
+  .footer {
+    text-align: center; padding: 2rem 0 0;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 2px; color: #bbb;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo"></div>
+    <span class="topbar-name">United Consulting™</span>
+  </div>
+  <div class="topbar-progress" id="progressWrap" style="visibility:hidden;">
+    <span class="progress-label">Voortgang</span>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <span class="progress-count" id="progressCount">0 / 15</span>
+  </div>
+</div>
+
+<div class="page-wrap">
+
+  <!-- ════════════════ SCREEN 1: WELCOME ════════════════ -->
+  <div class="screen active" id="screen-welcome">
+    <div class="welcome-card">
+      <div class="tag">Selectieprocedure United HR</div>
+      <h1>HR Hard Skills<br><strong>Sociale Wetgeving</strong></h1>
+      <p>Welkom bij de kennistoets sociale wetgeving.<br>
+      Deze test bestaat uit 15 meerkeuzevragen. Per vraag is slechts één antwoord juist.<br>
+      Tools zoals AI of opzoekingen op internet zijn niet toegestaan.</p>
+      <div class="welcome-meta">
+        <div class="welcome-meta-item">
+          <div class="val">15</div>
+          <div class="lbl">Vragen</div>
+        </div>
+        <div class="welcome-meta-item">
+          <div class="val">MCQ</div>
+          <div class="lbl">Type</div>
+        </div>
+        <div class="welcome-meta-item">
+          <div class="val">1</div>
+          <div class="lbl">Correct per vraag</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="start-card">
+      <label for="candidateName">Vul je naam in om te starten</label>
+      <input type="text" id="candidateName" placeholder="Voor- en achternaam" autocomplete="name">
+      <div class="start-actions">
+        <span class="start-error" id="nameError">Vul je voor- en achternaam in.</span>
+        <button type="button" class="btn" onclick="startTest()">Start de test</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ SCREEN 2: TEST ════════════════ -->
+  <div class="screen" id="screen-test">
+    <form id="testForm">
+
+      <div class="question-card" id="qcard-1">
+        <div class="question-header">
+          <span class="q-num">01</span>
+          <span class="q-text">Wat is het verschil tussen brutoloon en nettoloon?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-1-A"><input type="radio" name="q1" value="A"><span class="option-key">A</span><span class="option-text">Nettoloon is het bedrag dat de medewerker maandelijks op zijn rekening ontvangt van de werkgever</span></label>
+          <label class="option" id="opt-1-B"><input type="radio" name="q1" value="B"><span class="option-key">B</span><span class="option-text">Brutoloon en nettoloon zijn hetzelfde bedrag</span></label>
+          <label class="option" id="opt-1-C"><input type="radio" name="q1" value="C"><span class="option-key">C</span><span class="option-text">Brutoloon is het bedrag dat de medewerker maandelijks ontvangt van de werkgever</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-2">
+        <div class="question-header">
+          <span class="q-num">02</span>
+          <span class="q-text">Hoe werkt de opbouw van jaarlijkse vakantie in België?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-2-A"><input type="radio" name="q2" value="A"><span class="option-key">A</span><span class="option-text">Je bouwt je vakantiedagen op in het huidige jaar op basis van het aantal gewerkte dagen in datzelfde jaar</span></label>
+          <label class="option" id="opt-2-B"><input type="radio" name="q2" value="B"><span class="option-key">B</span><span class="option-text">Je bouwt je vakantiedagen op in het vorige kalenderjaar en neemt ze op in het huidige jaar</span></label>
+          <label class="option" id="opt-2-C"><input type="radio" name="q2" value="C"><span class="option-key">C</span><span class="option-text">Je krijgt elk jaar automatisch hetzelfde aantal vakantiedagen, ongeacht hoeveel dagen je gewerkt hebt</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-3">
+        <div class="question-header">
+          <span class="q-num">03</span>
+          <span class="q-text">Je werkt als bediende en wordt ziek. Hoe lang betaalt je werkgever gewaarborgd loon en vanaf wanneer neemt de mutualiteit dit over?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-3-A"><input type="radio" name="q3" value="A"><span class="option-key">A</span><span class="option-text">Mutualiteit betaalt vanaf de eerste dag van de ziekte alles uit</span></label>
+          <label class="option" id="opt-3-B"><input type="radio" name="q3" value="B"><span class="option-key">B</span><span class="option-text">Werkgever betaalt dag 1 – 14 van de ziekte, nadien gebeurt dit door de mutualiteit</span></label>
+          <label class="option" id="opt-3-C"><input type="radio" name="q3" value="C"><span class="option-key">C</span><span class="option-text">Werkgever betaalt dag 1 – 30 van de ziekte, nadien gebeurt dit door de mutualiteit</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-4">
+        <div class="question-header">
+          <span class="q-num">04</span>
+          <span class="q-text">Wie betaalt het loon van de werknemer tijdens haar zwangerschapsverlof?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-4-A"><input type="radio" name="q4" value="A"><span class="option-key">A</span><span class="option-text">De werknemer zelf</span></label>
+          <label class="option" id="opt-4-B"><input type="radio" name="q4" value="B"><span class="option-key">B</span><span class="option-text">De werkgever</span></label>
+          <label class="option" id="opt-4-C"><input type="radio" name="q4" value="C"><span class="option-key">C</span><span class="option-text">De mutualiteit</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-5">
+        <div class="question-header">
+          <span class="q-num">05</span>
+          <span class="q-text">Wat is het verschil tussen een opzeggingsvergoeding en een verbrekingsvergoeding?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-5-A"><input type="radio" name="q5" value="A"><span class="option-key">A</span><span class="option-text">Bij een opzeggingsvergoeding stopt het contract onmiddellijk, terwijl je bij een verbrekingsvergoeding nog moet blijven werken</span></label>
+          <label class="option" id="opt-5-B"><input type="radio" name="q5" value="B"><span class="option-key">B</span><span class="option-text">Bij een opzeggingsvergoeding werk je tijdens de opzegtermijn en krijg je loon, terwijl je bij een verbrekingsvergoeding meteen stopt en een vergoeding krijgt</span></label>
+          <label class="option" id="opt-5-C"><input type="radio" name="q5" value="C"><span class="option-key">C</span><span class="option-text">Beide betekenen dat je onmiddellijk stopt met werken en een vergoeding ontvangt</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-6">
+        <div class="question-header">
+          <span class="q-num">06</span>
+          <span class="q-text">Hoelang moet je in dienst zijn om ouderschapsverlof te kunnen opnemen?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-6-A"><input type="radio" name="q6" value="A"><span class="option-key">A</span><span class="option-text">Minstens 1 maand</span></label>
+          <label class="option" id="opt-6-B"><input type="radio" name="q6" value="B"><span class="option-key">B</span><span class="option-text">Minstens 3 maanden</span></label>
+          <label class="option" id="opt-6-C"><input type="radio" name="q6" value="C"><span class="option-key">C</span><span class="option-text">Minstens 1 jaar</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-7">
+        <div class="question-header">
+          <span class="q-num">07</span>
+          <span class="q-text">Op hoeveel weken moederschapsrust heb je recht als je mama wordt?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-7-A"><input type="radio" name="q7" value="A"><span class="option-key">A</span><span class="option-text">9 weken</span></label>
+          <label class="option" id="opt-7-B"><input type="radio" name="q7" value="B"><span class="option-key">B</span><span class="option-text">15 weken</span></label>
+          <label class="option" id="opt-7-C"><input type="radio" name="q7" value="C"><span class="option-key">C</span><span class="option-text">20 weken</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-8">
+        <div class="question-header">
+          <span class="q-num">08</span>
+          <span class="q-text">Welke verzekering ben je verplicht te voorzien als werkgever voor elke werknemer in België?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-8-A"><input type="radio" name="q8" value="A"><span class="option-key">A</span><span class="option-text">Groepsverzekering</span></label>
+          <label class="option" id="opt-8-B"><input type="radio" name="q8" value="B"><span class="option-key">B</span><span class="option-text">Hospitalisatieverzekering</span></label>
+          <label class="option" id="opt-8-C"><input type="radio" name="q8" value="C"><span class="option-key">C</span><span class="option-text">Arbeidsongevallenverzekering</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-9">
+        <div class="question-header">
+          <span class="q-num">09</span>
+          <span class="q-text">Wat is een netto-vergoeding?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-9-A"><input type="radio" name="q9" value="A"><span class="option-key">A</span><span class="option-text">Een vergoeding waarop enkel RSZ verschuldigd is, maar geen belastingen</span></label>
+          <label class="option" id="opt-9-B"><input type="radio" name="q9" value="B"><span class="option-key">B</span><span class="option-text">Een brutoloonbestanddeel dat vrijgesteld is van bedrijfsvoorheffing</span></label>
+          <label class="option" id="opt-9-C"><input type="radio" name="q9" value="C"><span class="option-key">C</span><span class="option-text">Een terugbetaling van kosten eigen aan de werkgever, vrijgesteld van RSZ en belastingen mits correct onderbouwd</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-10">
+        <div class="question-header">
+          <span class="q-num">10</span>
+          <span class="q-text">Wat is het doel van een DIMONA-aangifte voor een werkgever?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-10-A"><input type="radio" name="q10" value="A"><span class="option-key">A</span><span class="option-text">Een elektronische melding van elke in- en uitdiensttreding van een werknemer aan de overheid</span></label>
+          <label class="option" id="opt-10-B"><input type="radio" name="q10" value="B"><span class="option-key">B</span><span class="option-text">Een maandelijkse belasting die werknemers moeten betalen op hun loon</span></label>
+          <label class="option" id="opt-10-C"><input type="radio" name="q10" value="C"><span class="option-key">C</span><span class="option-text">Een premie die je ontvangt wanneer je ziek bent en niet kan werken</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-11">
+        <div class="question-header">
+          <span class="q-num">11</span>
+          <span class="q-text">Wat is de huidige werknemersbijdrage RSZ in België?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-11-A"><input type="radio" name="q11" value="A"><span class="option-key">A</span><span class="option-text">13,07%</span></label>
+          <label class="option" id="opt-11-B"><input type="radio" name="q11" value="B"><span class="option-key">B</span><span class="option-text">15,07%</span></label>
+          <label class="option" id="opt-11-C"><input type="radio" name="q11" value="C"><span class="option-key">C</span><span class="option-text">17,07%</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-12">
+        <div class="question-header">
+          <span class="q-num">12</span>
+          <span class="q-text">Wat is het VAA voor een bedrijfswagen?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-12-A"><input type="radio" name="q12" value="A"><span class="option-key">A</span><span class="option-text">Een vast bedrag per maand, ongeacht het type wagen, te betalen door de werkgever</span></label>
+          <label class="option" id="opt-12-B"><input type="radio" name="q12" value="B"><span class="option-key">B</span><span class="option-text">Een berekend belastbaar voordeel op basis van o.a. de cataloguswaarde van de wagen</span></label>
+          <label class="option" id="opt-12-C"><input type="radio" name="q12" value="C"><span class="option-key">C</span><span class="option-text">Een vast bedrag per maand, ongeacht het type wagen, te betalen door de werknemer voor privégebruik van de wagen, buiten woon-werkverkeer</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-13">
+        <div class="question-header">
+          <span class="q-num">13</span>
+          <span class="q-text">Wat is het systeem van de "flexibele verloning" of het cafetariaplan?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-13-A"><input type="radio" name="q13" value="A"><span class="option-key">A</span><span class="option-text">Een systeem waarbij werknemers hun uurrooster vrij kunnen kiezen</span></label>
+          <label class="option" id="opt-13-B"><input type="radio" name="q13" value="B"><span class="option-key">B</span><span class="option-text">Een wettelijk verplicht systeem voor bedrijven met meer dan 50 werknemers</span></label>
+          <label class="option" id="opt-13-C"><input type="radio" name="q13" value="C"><span class="option-key">C</span><span class="option-text">Een systeem waarbij werknemers (een deel van) hun brutoloon of eindejaarspremie omruilen voor alternatieve voordelen</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-14">
+        <div class="question-header">
+          <span class="q-num">14</span>
+          <span class="q-text">Wat is de maximale onbelaste kilometervergoeding voor verplaatsingen voor beroepsdoeleinden met de eigen wagen (2026)?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-14-A"><input type="radio" name="q14" value="A"><span class="option-key">A</span><span class="option-text">€0,15 per km</span></label>
+          <label class="option" id="opt-14-B"><input type="radio" name="q14" value="B"><span class="option-key">B</span><span class="option-text">€0,21 per km</span></label>
+          <label class="option" id="opt-14-C"><input type="radio" name="q14" value="C"><span class="option-key">C</span><span class="option-text">€0,43 per km</span></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-15">
+        <div class="question-header">
+          <span class="q-num">15</span>
+          <span class="q-text">Wat is CAO 32bis?</span>
+        </div>
+        <div class="options-list">
+          <label class="option" id="opt-15-A"><input type="radio" name="q15" value="A"><span class="option-key">A</span><span class="option-text">Een overname van een bedrijf waarbij de medewerker zijn rechten en plichten behoudt</span></label>
+          <label class="option" id="opt-15-B"><input type="radio" name="q15" value="B"><span class="option-key">B</span><span class="option-text">Een collectief ontslag van meer dan 10 werknemers tegelijk</span></label>
+          <label class="option" id="opt-15-C"><input type="radio" name="q15" value="C"><span class="option-key">C</span><span class="option-text">Een niet-recurrente resultaatsgebonden bonus die fiscaal voordelig is voor werknemers, uit te keren wanneer bepaalde doelstellingen worden behaald</span></label>
+        </div>
+      </div>
+
+      <div class="submit-section">
+        <span class="submit-note" id="submitNote">Beantwoord alle 15 vragen om in te dienen.</span>
+        <button type="button" class="btn" id="submitBtn" disabled onclick="submitTest()">Resultaat indienen</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ════════════════ SCREEN 3: RESULTS ════════════════ -->
+  <div class="screen" id="screen-results">
+    <div class="results-card">
+      <div class="r-label">Jouw resultaat</div>
+      <div class="r-score" id="rScore">—</div>
+      <div class="r-sub" id="rSub"></div>
+      <div class="r-grid" id="rGrid"></div>
+      <div class="r-message" id="rMessage"></div>
+      <div class="email-status" id="emailStatus"></div>
+    </div>
+  </div>
+
+  <div class="footer">United Consulting™ &nbsp;·&nbsp; www.unitedconsulting.be</div>
+</div>
+
+<script>
+  // ════════════════ CONFIG ════════════════
+  // PAS DEZE URL AAN NA DEPLOY VAN JE CLOUD FUNCTION (zie DEPLOY.md)
+  const API_ENDPOINT = 'https://europe-west1-uc-hr-test-sollicitanten.cloudfunctions.net/hr-tests-mailer';
+
+  const TEST_NAME = 'HR Hard Skills';
+  const CORRECT = { q1:'A', q2:'B', q3:'C', q4:'C', q5:'B', q6:'B', q7:'B', q8:'C', q9:'C', q10:'A', q11:'A', q12:'B', q13:'C', q14:'C', q15:'A' };
+  const QUESTIONS = {
+    q1: 'Wat is het verschil tussen brutoloon en nettoloon?',
+    q2: 'Hoe werkt de opbouw van jaarlijkse vakantie in België?',
+    q3: 'Je werkt als bediende en wordt ziek. Hoe lang betaalt je werkgever gewaarborgd loon en vanaf wanneer neemt de mutualiteit dit over?',
+    q4: 'Wie betaalt het loon van de werknemer tijdens haar zwangerschapsverlof?',
+    q5: 'Wat is het verschil tussen een opzeggingsvergoeding en een verbrekingsvergoeding?',
+    q6: 'Hoelang moet je in dienst zijn om ouderschapsverlof te kunnen opnemen?',
+    q7: 'Op hoeveel weken moederschapsrust heb je recht als je mama wordt?',
+    q8: 'Welke verzekering ben je verplicht te voorzien als werkgever voor elke werknemer in België?',
+    q9: 'Wat is een netto-vergoeding?',
+    q10: 'Wat is het doel van een DIMONA-aangifte voor een werkgever?',
+    q11: 'Wat is de huidige werknemersbijdrage RSZ in België?',
+    q12: 'Wat is het VAA voor een bedrijfswagen?',
+    q13: 'Wat is het systeem van de "flexibele verloning" of het cafetariaplan?',
+    q14: 'Wat is de maximale onbelaste kilometervergoeding voor verplaatsingen voor beroepsdoeleinden met de eigen wagen (2026)?',
+    q15: 'Wat is CAO 32bis?'
+  };
+  const TOTAL = 15;
+  let answered = 0;
+  let candidateName = '';
+
+  // ════════════════ NAVIGATION ════════════════
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function startTest() {
+    const input = document.getElementById('candidateName');
+    const name = input.value.trim();
+    if (name.length < 2 || !name.includes(' ')) {
+      document.getElementById('nameError').classList.add('show');
+      input.focus();
+      return;
+    }
+    candidateName = name;
+    document.getElementById('progressWrap').style.visibility = 'visible';
+    showScreen('test');
+  }
+
+  // ════════════════ OPTION CLICKS ════════════════
+  document.querySelectorAll('.option').forEach(opt => {
+    opt.addEventListener('click', function() {
+      const radio = this.querySelector('input[type="radio"]');
+      const name = radio.name;
+      document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+        r.closest('.option').classList.remove('selected');
+      });
+      radio.checked = true;
+      this.classList.add('selected');
+      const qNum = name.replace('q','');
+      const card = document.getElementById('qcard-' + qNum);
+      if (!card.classList.contains('answered')) {
+        card.classList.add('answered');
+        answered++;
+        updateProgress();
+      }
+    });
+  });
+
+  function updateProgress() {
+    const fill = document.getElementById('progressFill');
+    const count = document.getElementById('progressCount');
+    const pct = (answered / TOTAL) * 100;
+    fill.style.width = pct + '%';
+    count.textContent = answered + ' / ' + TOTAL;
+    const btn = document.getElementById('submitBtn');
+    const note = document.getElementById('submitNote');
+    if (answered === TOTAL) {
+      btn.disabled = false;
+      note.textContent = 'Alle vragen beantwoord. Klaar om in te dienen.';
+    }
+  }
+
+  // ════════════════ SUBMIT ════════════════
+  function submitTest() {
+    let score = 0;
+    const results = [];
+
+    for (let i = 1; i <= TOTAL; i++) {
+      const key = 'q' + i;
+      const correct = CORRECT[key];
+      const selected = document.querySelector(`input[name="${key}"]:checked`);
+      const selectedVal = selected ? selected.value : null;
+      const isCorrect = selectedVal === correct;
+      if (isCorrect) score++;
+      results.push({ q: i, question: QUESTIONS[key], selected: selectedVal, correct, isCorrect });
+    }
+
+    const pct = Math.round((score / TOTAL) * 100);
+
+    document.getElementById('rScore').textContent = score + ' / ' + TOTAL;
+    document.getElementById('rSub').textContent = pct + '% correct';
+
+    const grid = document.getElementById('rGrid');
+    grid.innerHTML = '';
+    results.forEach(r => {
+      const dot = document.createElement('div');
+      dot.className = 'r-dot' + (r.isCorrect ? ' ok' : '');
+      dot.title = 'V' + r.q + ': ' + (r.isCorrect ? 'correct' : 'fout');
+      grid.appendChild(dot);
+    });
+
+    let msg = '';
+    if (pct >= 80) msg = `Uitstekend resultaat, ${candidateName}! Je behaalde ${score} op ${TOTAL} — dat is een sterke prestatie op de kennistoets sociale wetgeving.`;
+    else if (pct >= 60) msg = `Goed resultaat, ${candidateName}. Je behaalde ${score} op ${TOTAL}. Er is nog ruimte voor verdieping op enkele topics.`;
+    else msg = `Bedankt voor het invullen, ${candidateName}. Je behaalde ${score} op ${TOTAL}. We raden aan om de sociale wetgeving verder te bestuderen.`;
+    document.getElementById('rMessage').textContent = msg;
+
+    showScreen('results');
+    sendResults(score, pct, results);
+  }
+
+  // ════════════════ SEND TO CLOUD FUNCTION ════════════════
+  async function sendResults(score, pct, results) {
+    const statusEl = document.getElementById('emailStatus');
+    statusEl.textContent = 'Resultaten worden verstuurd...';
+
+    const date = new Date().toLocaleString('nl-BE', { dateStyle: 'short', timeStyle: 'short' });
+    const subject = `${TEST_NAME} – ${candidateName}`;
+
+    const textLines = [
+      `Kandidaat: ${candidateName}`,
+      `Test: ${TEST_NAME} (Sociale Wetgeving)`,
+      `Datum: ${date}`,
+      `Score: ${score} / ${TOTAL} (${pct}%)`,
+      '',
+      '─────────── Detail per vraag ───────────',
+      ''
+    ];
+    results.forEach(r => {
+      textLines.push(`V${r.q}: ${r.question}`);
+      textLines.push(`  Gekozen: ${r.selected || '—'}   Correct: ${r.correct}   ${r.isCorrect ? '✓' : '✗'}`);
+      textLines.push('');
+    });
+    const textBody = textLines.join('\n');
+
+    const rowsHtml = results.map(r => `
+      <tr style="border-bottom:1px solid #E3E7EE;">
+        <td style="padding:10px 12px;font-size:12px;color:#434A55;font-weight:600;white-space:nowrap;">V${r.q}</td>
+        <td style="padding:10px 12px;font-size:12px;color:#424B55;">${escapeHtml(r.question)}</td>
+        <td style="padding:10px 12px;font-size:12px;color:#424B55;text-align:center;">${r.selected || '—'}</td>
+        <td style="padding:10px 12px;font-size:12px;color:#424B55;text-align:center;">${r.correct}</td>
+        <td style="padding:10px 12px;font-size:14px;text-align:center;color:${r.isCorrect ? '#2e7d52' : '#a0341e'};font-weight:700;">${r.isCorrect ? '✓' : '✗'}</td>
+      </tr>`).join('');
+
+    const htmlBody = `
+      <div style="font-family:Arial,sans-serif;color:#424B55;max-width:680px;">
+        <div style="background:#434A55;color:#fff;padding:24px;">
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:0.6;">United Consulting™ · HR Selectieprocedure</div>
+          <div style="font-size:20px;font-weight:700;margin-top:8px;">${TEST_NAME} — ${escapeHtml(candidateName)}</div>
+          <div style="font-size:13px;opacity:0.7;margin-top:4px;">${date}</div>
+          <div style="margin-top:16px;font-size:30px;font-weight:700;">${score} / ${TOTAL} <span style="font-size:14px;opacity:0.6;font-weight:400;">(${pct}%)</span></div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin-top:16px;font-family:Arial,sans-serif;">
+          <thead>
+            <tr style="background:#EAEDF2;">
+              <th style="padding:10px 12px;font-size:11px;text-align:left;text-transform:uppercase;letter-spacing:1px;color:#434A55;">#</th>
+              <th style="padding:10px 12px;font-size:11px;text-align:left;text-transform:uppercase;letter-spacing:1px;color:#434A55;">Vraag</th>
+              <th style="padding:10px 12px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#434A55;">Gekozen</th>
+              <th style="padding:10px 12px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#434A55;">Correct</th>
+              <th style="padding:10px 12px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#434A55;">OK</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+        <div style="margin-top:24px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#bbb;text-align:center;">www.unitedconsulting.be</div>
+      </div>`;
+
+    try {
+      const res = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          testName: TEST_NAME,
+          candidateName: candidateName,
+          subject: subject,
+          textBody: textBody,
+          htmlBody: htmlBody
+        })
+      });
+      if (!res.ok) throw new Error('Server error');
+      statusEl.className = 'email-status sent';
+      statusEl.textContent = '✓ Resultaten succesvol verstuurd naar de recruiter.';
+    } catch (err) {
+      statusEl.className = 'email-status error';
+      statusEl.textContent = '⚠ Kon niet automatisch versturen. Noteer het resultaat manueel: ' + document.getElementById('rScore').textContent + '.';
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+</script>
+</body>
+</html>

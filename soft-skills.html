@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Soft Skills — Recruitment — United Consulting</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --charcoal: #434A55;
+    --charcoal-dark: #2e333c;
+    --border: #E3E7EE;
+    --border-mid: #D8DCE3;
+    --text: #424B55;
+    --muted: #888;
+    --accent-bg: #EAEDF2;
+    --wrong: #a0341e;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Montserrat', sans-serif;
+    background: #F5F6F8;
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--charcoal);
+    padding: 0 2.5rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-brand { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { width: 22px; height: 22px; background: #fff; opacity: 0.9; }
+  .topbar-name {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 3px; color: #fff;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 20px; }
+  .topbar-progress { display: flex; align-items: center; gap: 10px; }
+  .progress-label {
+    font-size: 10px; color: rgba(255,255,255,0.5);
+    text-transform: uppercase; letter-spacing: 1.5px;
+  }
+  .progress-bar-wrap { width: 140px; height: 3px; background: rgba(255,255,255,0.15); }
+  .progress-bar-fill { height: 100%; background: #fff; width: 0%; transition: width 0.4s ease; }
+  .progress-count {
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7);
+    min-width: 36px; text-align: right;
+  }
+
+  /* ── TIMER ── */
+  .topbar-timer {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border: 1px solid rgba(255,255,255,0.2);
+  }
+  .timer-label {
+    font-size: 10px; color: rgba(255,255,255,0.5);
+    text-transform: uppercase; letter-spacing: 1.5px;
+  }
+  .timer-value {
+    font-size: 13px; font-weight: 700; color: #fff;
+    font-variant-numeric: tabular-nums; letter-spacing: 0.5px;
+    min-width: 48px; text-align: right;
+  }
+  .topbar-timer.warning { border-color: #f5b041; }
+  .topbar-timer.warning .timer-value { color: #f5b041; }
+  .topbar-timer.critical { border-color: #e74c3c; background: rgba(231,76,60,0.15); }
+  .topbar-timer.critical .timer-value { color: #ff7c6a; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  /* Time-up banner */
+  .timeup-banner {
+    background: #a0341e; color: #fff;
+    padding: 14px 20px; text-align: center;
+    font-size: 12px; font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ── LAYOUT ── */
+  .page-wrap { max-width: 820px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── WELCOME SCREEN ── */
+  .welcome-card {
+    background: var(--charcoal);
+    padding: 3rem 2.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .welcome-card .tag {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2.5px; color: rgba(255,255,255,0.45); margin-bottom: 12px;
+  }
+  .welcome-card h1 {
+    font-size: 26px; font-weight: 300; text-transform: uppercase;
+    letter-spacing: 2px; color: #fff; margin-bottom: 8px; line-height: 1.3;
+  }
+  .welcome-card h1 strong { font-weight: 700; }
+  .welcome-card p {
+    font-size: 13px; color: rgba(255,255,255,0.7);
+    margin-top: 1.5rem; line-height: 1.7;
+  }
+  .welcome-meta {
+    display: flex; gap: 2.5rem; margin-top: 2rem;
+    padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.12);
+  }
+  .welcome-meta-item .val { font-size: 22px; font-weight: 700; color: #fff; }
+  .welcome-meta-item .lbl {
+    font-size: 10px; color: rgba(255,255,255,0.45);
+    text-transform: uppercase; letter-spacing: 1px; margin-top: 3px;
+  }
+
+  .start-card {
+    background: #fff; border: 1px solid var(--border);
+    padding: 2rem 2.5rem;
+  }
+  .start-card label {
+    display: block; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--charcoal); margin-bottom: 10px;
+  }
+  .start-card input {
+    width: 100%; border: none; border-bottom: 2px solid var(--border-mid);
+    padding: 10px 0; font-family: 'Montserrat', sans-serif; font-size: 15px;
+    color: var(--text); background: transparent; outline: none;
+    transition: border-color 0.2s;
+  }
+  .start-card input:focus { border-bottom-color: var(--charcoal); }
+  .start-card input::placeholder { color: #ccc; }
+  .start-actions {
+    margin-top: 2rem; display: flex; justify-content: flex-end; align-items: center; gap: 1rem;
+  }
+  .start-error { font-size: 11px; color: var(--wrong); display: none; }
+  .start-error.show { display: block; }
+
+  /* ── QUESTION CARD ── */
+  .question-card {
+    background: #fff; border: 1px solid var(--border);
+    margin-bottom: 1.25rem; border-top: 3px solid var(--border);
+    transition: border-top-color 0.3s;
+  }
+  .question-card.answered { border-top-color: var(--charcoal); }
+
+  .question-header {
+    display: flex; align-items: flex-start; gap: 1rem;
+    padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+  }
+  .q-num {
+    font-size: 10px; font-weight: 700; color: var(--charcoal);
+    background: var(--accent-bg); padding: 3px 8px; letter-spacing: 1px;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .q-text { font-size: 13px; font-weight: 600; color: var(--charcoal); line-height: 1.55; }
+
+  .answer-area { padding: 1rem 1.5rem 1.25rem; }
+  .answer-area textarea {
+    width: 100%; min-height: 160px;
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px; color: var(--text);
+    line-height: 1.6; resize: vertical;
+    outline: none; transition: border-color 0.2s;
+    background: #FCFCFD;
+  }
+  .answer-area textarea:focus { border-color: var(--charcoal); background: #fff; }
+  .char-count {
+    margin-top: 6px; font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px; text-align: right;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    background: var(--charcoal); color: #fff; border: none;
+    padding: 14px 40px; font-family: 'Montserrat', sans-serif;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2.5px; cursor: pointer; transition: background 0.2s;
+  }
+  .btn:hover { background: var(--charcoal-dark); }
+  .btn:disabled { background: var(--border-mid); cursor: not-allowed; }
+
+  .submit-section {
+    margin-top: 2rem; display: flex; flex-direction: column;
+    align-items: flex-end; gap: 10px;
+  }
+  .submit-note { font-size: 11px; color: var(--muted); }
+
+  /* ── RESULTS ── */
+  .results-card {
+    background: var(--charcoal); padding: 2.5rem; margin-bottom: 1.5rem;
+  }
+  .results-card .r-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; color: rgba(255,255,255,0.45); margin-bottom: 8px;
+  }
+  .results-card h2 {
+    font-size: 28px; font-weight: 300; text-transform: uppercase;
+    letter-spacing: 2px; color: #fff;
+  }
+  .results-card h2 strong { font-weight: 700; }
+  .results-card .r-message {
+    font-size: 13px; color: rgba(255,255,255,0.8);
+    margin-top: 1.5rem; padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.12); line-height: 1.6;
+  }
+  .email-status {
+    margin-top: 1.25rem; font-size: 11px; color: rgba(255,255,255,0.5);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .email-status.sent { color: rgba(180,240,200,0.8); }
+  .email-status.error { color: rgba(255,180,160,0.8); }
+
+  .footer {
+    text-align: center; padding: 2rem 0 0;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 2px; color: #bbb;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo"></div>
+    <span class="topbar-name">United Consulting™</span>
+  </div>
+  <div class="topbar-right" id="topbarRight" style="visibility:hidden;">
+    <div class="topbar-timer" id="timerWrap">
+      <span class="timer-label">Tijd</span>
+      <span class="timer-value" id="timerValue">20:00</span>
+    </div>
+    <div class="topbar-progress">
+      <span class="progress-label">Voortgang</span>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <span class="progress-count" id="progressCount">0 / 6</span>
+    </div>
+  </div>
+</div>
+
+<div class="page-wrap">
+
+  <!-- ════════════════ SCREEN 1: WELCOME ════════════════ -->
+  <div class="screen active" id="screen-welcome">
+    <div class="welcome-card">
+      <div class="tag">Selectieprocedure United HR</div>
+      <h1>HR Soft Skills<br><strong>Recruitment</strong></h1>
+      <p>Deze test wordt afgelegd om jouw kennis binnen recruitment af te toetsen.<br>
+      De bedoeling is dat je onderstaande vragen zo concreet en volledig mogelijk beantwoordt, gebruikmakend van je eigen ervaring binnen recruitment.<br><br>
+      Tools zoals AI en opzoekingen op internet zijn <strong>niet toegestaan</strong>.<br>
+      Je hebt <strong>20 minuten</strong> tijd vanaf het moment dat je de test start. Wanneer de tijd op is, worden je antwoorden automatisch ingediend.</p>
+      <div class="welcome-meta">
+        <div class="welcome-meta-item">
+          <div class="val">6</div>
+          <div class="lbl">Open vragen</div>
+        </div>
+        <div class="welcome-meta-item">
+          <div class="val">20</div>
+          <div class="lbl">Minuten tijd</div>
+        </div>
+        <div class="welcome-meta-item">
+          <div class="val">NL</div>
+          <div class="lbl">Taal</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="start-card">
+      <label for="candidateName">Vul je naam in om te starten</label>
+      <input type="text" id="candidateName" placeholder="Voor- en achternaam" autocomplete="name">
+      <div class="start-actions">
+        <span class="start-error" id="nameError">Vul je voor- en achternaam in.</span>
+        <button type="button" class="btn" onclick="startTest()">Start de test</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ SCREEN 2: TEST ════════════════ -->
+  <div class="screen" id="screen-test">
+    <form id="testForm">
+
+      <div class="question-card" id="qcard-1">
+        <div class="question-header">
+          <span class="q-num">01</span>
+          <span class="q-text">Stel je moet een moeilijke vacature rond bv. payroll invullen. Hoe zou je de rekrutering van A tot Z aanpakken om deze vacature binnen 4 maanden in te vullen? Schrijf alle stappen neer.</span>
+        </div>
+        <div class="answer-area">
+          <textarea id="q1" placeholder="Jouw antwoord..."></textarea>
+          <div class="char-count" id="count-1">0 tekens</div>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-2">
+        <div class="question-header">
+          <span class="q-num">02</span>
+          <span class="q-text">Heb je hierbij gedacht aan employer branding? Aan welke concrete stappen van employer branding denk je?</span>
+        </div>
+        <div class="answer-area">
+          <textarea id="q2" placeholder="Jouw antwoord..."></textarea>
+          <div class="char-count" id="count-2">0 tekens</div>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-3">
+        <div class="question-header">
+          <span class="q-num">03</span>
+          <span class="q-text">Wie zijn jouw belangrijkste stakeholders?</span>
+        </div>
+        <div class="answer-area">
+          <textarea id="q3" placeholder="Jouw antwoord..."></textarea>
+          <div class="char-count" id="count-3">0 tekens</div>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-4">
+        <div class="question-header">
+          <span class="q-num">04</span>
+          <span class="q-text">Zoals eerder vermeld heb je maar een beperkte tijd. Hoe ga je hier het best op inzetten om de opgelegde deadline te behalen?</span>
+        </div>
+        <div class="answer-area">
+          <textarea id="q4" placeholder="Jouw antwoord..."></textarea>
+          <div class="char-count" id="count-4">0 tekens</div>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-5">
+        <div class="question-header">
+          <span class="q-num">05</span>
+          <span class="q-text">Stel dat je een kandidaat voorstelt aan de hiring manager waar jij volledig achter staat, maar de hiring manager niet. Welke argumenten zal jij hanteren om de hiring manager toch te kunnen overtuigen?</span>
+        </div>
+        <div class="answer-area">
+          <textarea id="q5" placeholder="Jouw antwoord..."></textarea>
+          <div class="char-count" id="count-5">0 tekens</div>
+        </div>
+      </div>
+
+      <div class="question-card" id="qcard-6">
+        <div class="question-header">
+          <span class="q-num">06</span>
+          <span class="q-text">Stel je hebt na 2 maanden nog geen resultaat. Welke nieuwe of bestaande acties zou je opnieuw invoeren, rekening houdend met het opgelegde budget?</span>
+        </div>
+        <div class="answer-area">
+          <textarea id="q6" placeholder="Jouw antwoord..."></textarea>
+          <div class="char-count" id="count-6">0 tekens</div>
+        </div>
+      </div>
+
+      <div class="submit-section">
+        <span class="submit-note" id="submitNote">Beantwoord alle 6 vragen om in te dienen.</span>
+        <button type="button" class="btn" id="submitBtn" disabled onclick="submitTest()">Antwoorden indienen</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ════════════════ SCREEN 3: RESULTS ════════════════ -->
+  <div class="screen" id="screen-results">
+    <div class="results-card">
+      <div class="r-label">Test voltooid</div>
+      <h2>Bedankt,<br><strong id="rName">kandidaat</strong></h2>
+      <div class="r-message">Je antwoorden werden ingediend en worden bezorgd aan de recruiter van United Consulting. Een recruiter zal jouw input bekijken en tijdens het gesprek op bepaalde elementen verder ingaan.</div>
+      <div class="email-status" id="emailStatus"></div>
+    </div>
+  </div>
+
+  <div class="footer">United Consulting™ &nbsp;·&nbsp; www.unitedconsulting.be</div>
+</div>
+
+<script>
+  // ════════════════ CONFIG ════════════════
+  // PAS DEZE URL AAN NA DEPLOY VAN JE CLOUD FUNCTION (zie DEPLOY.md)
+  const API_ENDPOINT = 'https://europe-west1-uc-hr-test-sollicitanten.cloudfunctions.net/hr-tests-mailer';
+
+  const TEST_NAME = 'HR Soft Skills';
+  const TOTAL = 6;
+  const MIN_CHARS = 20;
+  const TIME_LIMIT_SECONDS = 20 * 60;
+  const WARNING_AT = 5 * 60;
+  const CRITICAL_AT = 60;
+  const QUESTIONS = {
+    q1: 'Stel je moet een moeilijke vacature rond bv. payroll invullen. Hoe zou je de rekrutering van A tot Z aanpakken om deze vacature binnen 4 maanden in te vullen? Schrijf alle stappen neer.',
+    q2: 'Heb je hierbij gedacht aan employer branding? Aan welke concrete stappen van employer branding denk je?',
+    q3: 'Wie zijn jouw belangrijkste stakeholders?',
+    q4: 'Zoals eerder vermeld heb je maar een beperkte tijd. Hoe ga je hier het best op inzetten om de opgelegde deadline te behalen?',
+    q5: 'Stel dat je een kandidaat voorstelt aan de hiring manager waar jij volledig achter staat, maar de hiring manager niet. Welke argumenten zal jij hanteren om de hiring manager toch te kunnen overtuigen?',
+    q6: 'Stel je hebt na 2 maanden nog geen resultaat. Welke nieuwe of bestaande acties zou je opnieuw invoeren, rekening houdend met het opgelegde budget?'
+  };
+  const answered = new Set();
+  let candidateName = '';
+  let timerInterval = null;
+  let timeLeft = TIME_LIMIT_SECONDS;
+  let testSubmitted = false;
+
+  // ════════════════ NAVIGATION ════════════════
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function startTest() {
+    const input = document.getElementById('candidateName');
+    const name = input.value.trim();
+    if (name.length < 2 || !name.includes(' ')) {
+      document.getElementById('nameError').classList.add('show');
+      input.focus();
+      return;
+    }
+    candidateName = name;
+    document.getElementById('topbarRight').style.visibility = 'visible';
+    showScreen('test');
+    startTimer();
+  }
+
+  // ════════════════ TIMER ════════════════
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
+  function startTimer() {
+    timeLeft = TIME_LIMIT_SECONDS;
+    renderTimer();
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      renderTimer();
+      if (timeLeft <= 0) {
+        stopTimer();
+        autoSubmit();
+      }
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
+
+  function renderTimer() {
+    const wrap = document.getElementById('timerWrap');
+    const val = document.getElementById('timerValue');
+    val.textContent = formatTime(Math.max(0, timeLeft));
+    wrap.classList.toggle('warning', timeLeft <= WARNING_AT && timeLeft > CRITICAL_AT);
+    wrap.classList.toggle('critical', timeLeft <= CRITICAL_AT);
+  }
+
+  function autoSubmit() {
+    if (testSubmitted) return;
+    const testForm = document.getElementById('testForm');
+    const banner = document.createElement('div');
+    banner.className = 'timeup-banner';
+    banner.textContent = 'Tijd is om — je antwoorden worden automatisch ingediend';
+    testForm.insertBefore(banner, testForm.firstChild);
+    submitTest(true);
+  }
+
+  // ════════════════ TEXTAREA TRACKING ════════════════
+  for (let i = 1; i <= TOTAL; i++) {
+    const ta = document.getElementById('q' + i);
+    const counter = document.getElementById('count-' + i);
+    const card = document.getElementById('qcard-' + i);
+    ta.addEventListener('input', () => {
+      const len = ta.value.trim().length;
+      counter.textContent = len + ' tekens';
+      if (len >= MIN_CHARS) {
+        if (!answered.has(i)) {
+          answered.add(i);
+          card.classList.add('answered');
+        }
+      } else {
+        if (answered.has(i)) {
+          answered.delete(i);
+          card.classList.remove('answered');
+        }
+      }
+      updateProgress();
+    });
+  }
+
+  function updateProgress() {
+    const count = answered.size;
+    const fill = document.getElementById('progressFill');
+    const label = document.getElementById('progressCount');
+    fill.style.width = (count / TOTAL * 100) + '%';
+    label.textContent = count + ' / ' + TOTAL;
+    const btn = document.getElementById('submitBtn');
+    const note = document.getElementById('submitNote');
+    if (count === TOTAL) {
+      btn.disabled = false;
+      note.textContent = 'Alle vragen beantwoord. Klaar om in te dienen.';
+    } else {
+      btn.disabled = true;
+      note.textContent = `Nog ${TOTAL - count} vraag/vragen te beantwoorden (min. ${MIN_CHARS} tekens per antwoord).`;
+    }
+  }
+
+  // ════════════════ SUBMIT ════════════════
+  function submitTest(autoSubmitted) {
+    if (testSubmitted) return;
+    testSubmitted = true;
+    stopTimer();
+    const timeUsed = TIME_LIMIT_SECONDS - Math.max(0, timeLeft);
+    const answers = [];
+    for (let i = 1; i <= TOTAL; i++) {
+      answers.push({
+        q: i,
+        question: QUESTIONS['q' + i],
+        answer: document.getElementById('q' + i).value.trim()
+      });
+    }
+    document.getElementById('rName').textContent = candidateName;
+    showScreen('results');
+    sendResults(answers, { autoSubmitted: !!autoSubmitted, timeUsedSeconds: timeUsed });
+  }
+
+  async function sendResults(answers, meta) {
+    const statusEl = document.getElementById('emailStatus');
+    statusEl.textContent = 'Antwoorden worden verstuurd...';
+
+    const date = new Date().toLocaleString('nl-BE', { dateStyle: 'short', timeStyle: 'short' });
+    const subject = `${TEST_NAME} – ${candidateName}`;
+    const timeUsedStr = formatTime(meta.timeUsedSeconds) + ' / ' + formatTime(TIME_LIMIT_SECONDS);
+    const submitMode = meta.autoSubmitted
+      ? 'Automatisch ingediend (tijd verstreken)'
+      : 'Manueel ingediend door kandidaat';
+
+    const textLines = [
+      `Kandidaat: ${candidateName}`,
+      `Test: ${TEST_NAME} (Recruitment)`,
+      `Datum: ${date}`,
+      `Tijd gebruikt: ${timeUsedStr}`,
+      `Inzending: ${submitMode}`,
+      '',
+      '═══════════════════════════════════════',
+      ''
+    ];
+    answers.forEach(a => {
+      textLines.push(`VRAAG ${a.q}: ${a.question}`);
+      textLines.push('');
+      textLines.push('ANTWOORD:');
+      textLines.push(a.answer);
+      textLines.push('');
+      textLines.push('───────────────────────────────────────');
+      textLines.push('');
+    });
+    const textBody = textLines.join('\n');
+
+    const blocksHtml = answers.map(a => `
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid #E3E7EE;">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:6px;">Vraag ${a.q}</div>
+        <div style="font-size:13px;font-weight:600;color:#434A55;line-height:1.55;margin-bottom:12px;">${escapeHtml(a.question)}</div>
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:6px;">Antwoord kandidaat</div>
+        <div style="font-size:13px;color:#424B55;line-height:1.7;white-space:pre-wrap;background:#FAFAFA;padding:12px 14px;border-left:3px solid #434A55;">${escapeHtml(a.answer)}</div>
+      </div>`).join('');
+
+    const htmlBody = `
+      <div style="font-family:Arial,sans-serif;color:#424B55;max-width:720px;">
+        <div style="background:#434A55;color:#fff;padding:24px;">
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:0.6;">United Consulting™ · HR Selectieprocedure</div>
+          <div style="font-size:20px;font-weight:700;margin-top:8px;">${TEST_NAME} — ${escapeHtml(candidateName)}</div>
+          <div style="font-size:13px;opacity:0.7;margin-top:4px;">${date}</div>
+          <div style="font-size:12px;opacity:0.75;margin-top:12px;">Tijd gebruikt: <strong>${timeUsedStr}</strong> &nbsp;·&nbsp; ${submitMode}</div>
+        </div>
+        <div style="padding:0 4px;">${blocksHtml}</div>
+        <div style="margin-top:32px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#bbb;text-align:center;">www.unitedconsulting.be</div>
+      </div>`;
+
+    try {
+      const res = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          testName: TEST_NAME,
+          candidateName: candidateName,
+          subject: subject,
+          textBody: textBody,
+          htmlBody: htmlBody
+        })
+      });
+      if (!res.ok) throw new Error('Server error');
+      statusEl.className = 'email-status sent';
+      statusEl.textContent = '✓ Antwoorden succesvol verstuurd naar de recruiter.';
+    } catch (err) {
+      statusEl.className = 'email-status error';
+      statusEl.textContent = '⚠ Kon niet automatisch versturen. Laat de recruiter weten dat de test is voltooid.';
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# Backend (bevat server-side code en referenties naar GCP resources)
+function/
+
+# Source / interne documenten
+DEPLOY.md
+Test soft HR.odt
+kennistoets_united_hr.html
+
+# Claude / IDE / OS
+.claude/
+.DS_Store
+Icon?
+*.swp
+.idea/
+.vscode/
