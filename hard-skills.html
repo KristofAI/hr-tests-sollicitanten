@@ -50,6 +50,7 @@
     font-size: 11px; font-weight: 700; text-transform: uppercase;
     letter-spacing: 3px; color: #fff;
   }
+  .topbar-right { display: flex; align-items: center; gap: 20px; }
   .topbar-progress { display: flex; align-items: center; gap: 10px; }
   .progress-label {
     font-size: 10px; color: rgba(255,255,255,0.5);
@@ -60,6 +61,34 @@
   .progress-count {
     font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7);
     min-width: 36px; text-align: right;
+  }
+
+  /* ── TIMER ── */
+  .topbar-timer {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border: 1px solid rgba(255,255,255,0.2);
+  }
+  .timer-label {
+    font-size: 10px; color: rgba(255,255,255,0.5);
+    text-transform: uppercase; letter-spacing: 1.5px;
+  }
+  .timer-value {
+    font-size: 13px; font-weight: 700; color: #fff;
+    font-variant-numeric: tabular-nums; letter-spacing: 0.5px;
+    min-width: 48px; text-align: right;
+  }
+  .topbar-timer.warning { border-color: #f5b041; }
+  .topbar-timer.warning .timer-value { color: #f5b041; }
+  .topbar-timer.critical { border-color: #e74c3c; background: rgba(231,76,60,0.15); }
+  .topbar-timer.critical .timer-value { color: #ff7c6a; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  /* Time-up banner */
+  .timeup-banner {
+    background: #a0341e; color: #fff;
+    padding: 14px 20px; text-align: center;
+    font-size: 12px; font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase;
   }
 
   /* ── LAYOUT ── */
@@ -239,12 +268,18 @@
     <div class="topbar-logo"></div>
     <span class="topbar-name">United Consulting™</span>
   </div>
-  <div class="topbar-progress" id="progressWrap" style="visibility:hidden;">
-    <span class="progress-label">Voortgang</span>
-    <div class="progress-bar-wrap">
-      <div class="progress-bar-fill" id="progressFill"></div>
+  <div class="topbar-right" id="topbarRight" style="visibility:hidden;">
+    <div class="topbar-timer" id="timerWrap">
+      <span class="timer-label">Tijd</span>
+      <span class="timer-value" id="timerValue">08:00</span>
     </div>
-    <span class="progress-count" id="progressCount">0 / 15</span>
+    <div class="topbar-progress">
+      <span class="progress-label">Voortgang</span>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <span class="progress-count" id="progressCount">0 / 15</span>
+    </div>
   </div>
 </div>
 
@@ -257,19 +292,20 @@
       <h1>HR Hard Skills<br><strong>Sociale Wetgeving</strong></h1>
       <p>Welkom bij de kennistoets sociale wetgeving.<br>
       Deze test bestaat uit 15 meerkeuzevragen. Per vraag is slechts één antwoord juist.<br>
-      Tools zoals AI of opzoekingen op internet zijn niet toegestaan.</p>
+      Tools zoals AI of opzoekingen op internet zijn <strong>niet toegestaan</strong>.<br>
+      Je hebt <strong>8 minuten</strong> tijd vanaf het moment dat je de test start. Wanneer de tijd op is, wordt je test automatisch ingediend met de antwoorden die je al aangeduid hebt.</p>
       <div class="welcome-meta">
         <div class="welcome-meta-item">
           <div class="val">15</div>
           <div class="lbl">Vragen</div>
         </div>
         <div class="welcome-meta-item">
-          <div class="val">MCQ</div>
-          <div class="lbl">Type</div>
+          <div class="val">8</div>
+          <div class="lbl">Minuten tijd</div>
         </div>
         <div class="welcome-meta-item">
-          <div class="val">1</div>
-          <div class="lbl">Correct per vraag</div>
+          <div class="val">MCQ</div>
+          <div class="lbl">Type</div>
         </div>
       </div>
     </div>
@@ -496,7 +532,7 @@
   const API_ENDPOINT = 'https://europe-west1-uc-hr-test-sollicitanten.cloudfunctions.net/hr-tests-mailer';
 
   const TEST_NAME = 'HR Hard Skills';
-  const CORRECT = { q1:'A', q2:'B', q3:'C', q4:'C', q5:'B', q6:'B', q7:'B', q8:'C', q9:'C', q10:'A', q11:'A', q12:'B', q13:'C', q14:'C', q15:'A' };
+  const CORRECT = { q1:'A', q2:'B', q3:'C', q4:'C', q5:'B', q6:'C', q7:'B', q8:'C', q9:'C', q10:'A', q11:'A', q12:'B', q13:'C', q14:'C', q15:'A' };
   const QUESTIONS = {
     q1: 'Wat is het verschil tussen brutoloon en nettoloon?',
     q2: 'Hoe werkt de opbouw van jaarlijkse vakantie in België?',
@@ -515,8 +551,14 @@
     q15: 'Wat is CAO 32bis?'
   };
   const TOTAL = 15;
+  const TIME_LIMIT_SECONDS = 8 * 60;
+  const WARNING_AT = 2 * 60;
+  const CRITICAL_AT = 30;
   let answered = 0;
   let candidateName = '';
+  let timerInterval = null;
+  let timeLeft = TIME_LIMIT_SECONDS;
+  let testSubmitted = false;
 
   // ════════════════ NAVIGATION ════════════════
   function showScreen(name) {
@@ -534,8 +576,54 @@
       return;
     }
     candidateName = name;
-    document.getElementById('progressWrap').style.visibility = 'visible';
+    document.getElementById('topbarRight').style.visibility = 'visible';
     showScreen('test');
+    startTimer();
+  }
+
+  // ════════════════ TIMER ════════════════
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
+  function startTimer() {
+    timeLeft = TIME_LIMIT_SECONDS;
+    renderTimer();
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      renderTimer();
+      if (timeLeft <= 0) {
+        stopTimer();
+        autoSubmit();
+      }
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
+
+  function renderTimer() {
+    const wrap = document.getElementById('timerWrap');
+    const val = document.getElementById('timerValue');
+    val.textContent = formatTime(Math.max(0, timeLeft));
+    wrap.classList.toggle('warning', timeLeft <= WARNING_AT && timeLeft > CRITICAL_AT);
+    wrap.classList.toggle('critical', timeLeft <= CRITICAL_AT);
+  }
+
+  function autoSubmit() {
+    if (testSubmitted) return;
+    const testForm = document.getElementById('testForm');
+    const banner = document.createElement('div');
+    banner.className = 'timeup-banner';
+    banner.textContent = 'Tijd is om — je antwoorden worden automatisch ingediend';
+    testForm.insertBefore(banner, testForm.firstChild);
+    submitTest(true);
   }
 
   // ════════════════ OPTION CLICKS ════════════════
@@ -573,7 +661,10 @@
   }
 
   // ════════════════ SUBMIT ════════════════
-  function submitTest() {
+  function submitTest(autoSubmitted) {
+    if (testSubmitted) return;
+    testSubmitted = true;
+    stopTimer();
     let score = 0;
     const results = [];
 
@@ -608,21 +699,28 @@
     document.getElementById('rMessage').textContent = msg;
 
     showScreen('results');
-    sendResults(score, pct, results);
+    const timeUsed = TIME_LIMIT_SECONDS - Math.max(0, timeLeft);
+    sendResults(score, pct, results, { autoSubmitted: !!autoSubmitted, timeUsedSeconds: timeUsed });
   }
 
   // ════════════════ SEND TO CLOUD FUNCTION ════════════════
-  async function sendResults(score, pct, results) {
+  async function sendResults(score, pct, results, meta) {
     const statusEl = document.getElementById('emailStatus');
     statusEl.textContent = 'Resultaten worden verstuurd...';
 
     const date = new Date().toLocaleString('nl-BE', { dateStyle: 'short', timeStyle: 'short' });
     const subject = `${TEST_NAME} – ${candidateName}`;
+    const timeUsedStr = formatTime(meta.timeUsedSeconds) + ' / ' + formatTime(TIME_LIMIT_SECONDS);
+    const submitMode = meta.autoSubmitted
+      ? 'Automatisch ingediend (tijd verstreken)'
+      : 'Manueel ingediend door kandidaat';
 
     const textLines = [
       `Kandidaat: ${candidateName}`,
       `Test: ${TEST_NAME} (Sociale Wetgeving)`,
       `Datum: ${date}`,
+      `Tijd gebruikt: ${timeUsedStr}`,
+      `Inzending: ${submitMode}`,
       `Score: ${score} / ${TOTAL} (${pct}%)`,
       '',
       '─────────── Detail per vraag ───────────',
@@ -650,6 +748,7 @@
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:0.6;">United Consulting™ · HR Selectieprocedure</div>
           <div style="font-size:20px;font-weight:700;margin-top:8px;">${TEST_NAME} — ${escapeHtml(candidateName)}</div>
           <div style="font-size:13px;opacity:0.7;margin-top:4px;">${date}</div>
+          <div style="font-size:12px;opacity:0.75;margin-top:8px;">Tijd gebruikt: <strong>${timeUsedStr}</strong> &nbsp;·&nbsp; ${submitMode}</div>
           <div style="margin-top:16px;font-size:30px;font-weight:700;">${score} / ${TOTAL} <span style="font-size:14px;opacity:0.6;font-weight:400;">(${pct}%)</span></div>
         </div>
         <table style="width:100%;border-collapse:collapse;margin-top:16px;font-family:Arial,sans-serif;">

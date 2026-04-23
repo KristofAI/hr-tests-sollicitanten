@@ -144,13 +144,14 @@
   .start-error { font-size: 11px; color: var(--wrong); display: none; }
   .start-error.show { display: block; }
 
-  /* ── QUESTION CARD ── */
+  /* ── QUESTION CARD (WIZARD MODE) ── */
   .question-card {
     background: #fff; border: 1px solid var(--border);
-    margin-bottom: 1.25rem; border-top: 3px solid var(--border);
-    transition: border-top-color 0.3s;
+    margin-bottom: 1.25rem; border-top: 3px solid var(--charcoal);
+    display: none;
   }
-  .question-card.answered { border-top-color: var(--charcoal); }
+  .question-card.current { display: block; animation: fadein 0.25s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
   .question-header {
     display: flex; align-items: flex-start; gap: 1rem;
@@ -179,6 +180,19 @@
     margin-top: 6px; font-size: 10px; color: var(--muted);
     text-transform: uppercase; letter-spacing: 1px; text-align: right;
   }
+  .no-back-notice {
+    margin-top: 14px; padding: 10px 14px;
+    background: #FFF8E7; border-left: 3px solid #D4A017;
+    font-size: 11px; color: #6B5200; line-height: 1.55;
+  }
+  .no-back-notice strong { color: #4a3900; }
+
+  /* Submit buttons */
+  .btn.secondary {
+    background: transparent; color: var(--charcoal);
+    border: 1.5px solid var(--charcoal);
+  }
+  .btn.secondary:hover { background: var(--accent-bg); }
 
   /* ── BUTTONS ── */
   .btn {
@@ -261,6 +275,7 @@
       <p>Deze test wordt afgelegd om jouw kennis binnen recruitment af te toetsen.<br>
       De bedoeling is dat je onderstaande vragen zo concreet en volledig mogelijk beantwoordt, gebruikmakend van je eigen ervaring binnen recruitment.<br><br>
       Tools zoals AI en opzoekingen op internet zijn <strong>niet toegestaan</strong>.<br>
+      Je krijgt <strong>één vraag per scherm</strong>. Zodra je op <em>"Volgende vraag"</em> klikt, kan je niet meer terug naar een vorige vraag.<br>
       Je hebt <strong>20 minuten</strong> tijd vanaf het moment dat je de test start. Wanneer de tijd op is, worden je antwoorden automatisch ingediend.</p>
       <div class="welcome-meta">
         <div class="welcome-meta-item">
@@ -300,6 +315,7 @@
         <div class="answer-area">
           <textarea id="q1" placeholder="Jouw antwoord..."></textarea>
           <div class="char-count" id="count-1">0 tekens</div>
+          <div class="no-back-notice"><strong>⚠ Let op:</strong> zodra je op "Volgende vraag" klikt, kan je deze vraag niet meer aanpassen of ernaar terugkeren.</div>
         </div>
       </div>
 
@@ -311,6 +327,7 @@
         <div class="answer-area">
           <textarea id="q2" placeholder="Jouw antwoord..."></textarea>
           <div class="char-count" id="count-2">0 tekens</div>
+          <div class="no-back-notice"><strong>⚠ Let op:</strong> zodra je op "Volgende vraag" klikt, kan je deze vraag niet meer aanpassen of ernaar terugkeren.</div>
         </div>
       </div>
 
@@ -322,6 +339,7 @@
         <div class="answer-area">
           <textarea id="q3" placeholder="Jouw antwoord..."></textarea>
           <div class="char-count" id="count-3">0 tekens</div>
+          <div class="no-back-notice"><strong>⚠ Let op:</strong> zodra je op "Volgende vraag" klikt, kan je deze vraag niet meer aanpassen of ernaar terugkeren.</div>
         </div>
       </div>
 
@@ -333,6 +351,7 @@
         <div class="answer-area">
           <textarea id="q4" placeholder="Jouw antwoord..."></textarea>
           <div class="char-count" id="count-4">0 tekens</div>
+          <div class="no-back-notice"><strong>⚠ Let op:</strong> zodra je op "Volgende vraag" klikt, kan je deze vraag niet meer aanpassen of ernaar terugkeren.</div>
         </div>
       </div>
 
@@ -344,6 +363,7 @@
         <div class="answer-area">
           <textarea id="q5" placeholder="Jouw antwoord..."></textarea>
           <div class="char-count" id="count-5">0 tekens</div>
+          <div class="no-back-notice"><strong>⚠ Let op:</strong> zodra je op "Volgende vraag" klikt, kan je deze vraag niet meer aanpassen of ernaar terugkeren.</div>
         </div>
       </div>
 
@@ -355,12 +375,14 @@
         <div class="answer-area">
           <textarea id="q6" placeholder="Jouw antwoord..."></textarea>
           <div class="char-count" id="count-6">0 tekens</div>
+          <div class="no-back-notice"><strong>⚠ Let op:</strong> dit is de laatste vraag. Zodra je op "Antwoorden indienen" klikt, is je test afgelopen en kan je niets meer aanpassen.</div>
         </div>
       </div>
 
       <div class="submit-section">
-        <span class="submit-note" id="submitNote">Beantwoord alle 6 vragen om in te dienen.</span>
-        <button type="button" class="btn" id="submitBtn" disabled onclick="submitTest()">Antwoorden indienen</button>
+        <span class="submit-note" id="submitNote">Minimum 20 tekens nodig om door te gaan.</span>
+        <button type="button" class="btn" id="nextBtn" disabled onclick="nextQuestion()">Volgende vraag →</button>
+        <button type="button" class="btn" id="submitBtn" disabled style="display:none;" onclick="submitTest()">Antwoorden indienen</button>
       </div>
     </form>
   </div>
@@ -397,7 +419,7 @@
     q5: 'Stel dat je een kandidaat voorstelt aan de hiring manager waar jij volledig achter staat, maar de hiring manager niet. Welke argumenten zal jij hanteren om de hiring manager toch te kunnen overtuigen?',
     q6: 'Stel je hebt na 2 maanden nog geen resultaat. Welke nieuwe of bestaande acties zou je opnieuw invoeren, rekening houdend met het opgelegde budget?'
   };
-  const answered = new Set();
+  let currentQ = 1;
   let candidateName = '';
   let timerInterval = null;
   let timeLeft = TIME_LIMIT_SECONDS;
@@ -421,7 +443,52 @@
     candidateName = name;
     document.getElementById('topbarRight').style.visibility = 'visible';
     showScreen('test');
+    currentQ = 1;
+    showQuestion(1);
     startTimer();
+  }
+
+  // ════════════════ WIZARD ════════════════
+  function showQuestion(n) {
+    document.querySelectorAll('.question-card').forEach(c => c.classList.remove('current'));
+    document.getElementById('qcard-' + n).classList.add('current');
+    updateButtons();
+    updateProgress();
+    setTimeout(() => {
+      const ta = document.getElementById('q' + n);
+      if (ta && !ta.disabled) ta.focus();
+    }, 100);
+  }
+
+  function nextQuestion() {
+    if (testSubmitted) return;
+    const ta = document.getElementById('q' + currentQ);
+    if (ta.value.trim().length < MIN_CHARS) return;
+    ta.setAttribute('readonly', 'readonly');  // lock het antwoord
+    ta.disabled = true;
+    currentQ++;
+    showQuestion(currentQ);
+  }
+
+  function updateButtons() {
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const note = document.getElementById('submitNote');
+    const isLast = currentQ === TOTAL;
+    const currentAnswer = document.getElementById('q' + currentQ).value.trim();
+    const valid = currentAnswer.length >= MIN_CHARS;
+    nextBtn.style.display = isLast ? 'none' : 'inline-block';
+    submitBtn.style.display = isLast ? 'inline-block' : 'none';
+    nextBtn.disabled = !valid;
+    submitBtn.disabled = !valid;
+    if (!valid) {
+      const tekort = MIN_CHARS - currentAnswer.length;
+      note.textContent = `Nog ${tekort} tekens nodig om door te gaan.`;
+    } else {
+      note.textContent = isLast
+        ? 'Klaar om in te dienen.'
+        : `Vraag ${currentQ} van ${TOTAL} beantwoord.`;
+    }
   }
 
   // ════════════════ TIMER ════════════════
@@ -473,40 +540,19 @@
   for (let i = 1; i <= TOTAL; i++) {
     const ta = document.getElementById('q' + i);
     const counter = document.getElementById('count-' + i);
-    const card = document.getElementById('qcard-' + i);
     ta.addEventListener('input', () => {
       const len = ta.value.trim().length;
       counter.textContent = len + ' tekens';
-      if (len >= MIN_CHARS) {
-        if (!answered.has(i)) {
-          answered.add(i);
-          card.classList.add('answered');
-        }
-      } else {
-        if (answered.has(i)) {
-          answered.delete(i);
-          card.classList.remove('answered');
-        }
-      }
-      updateProgress();
+      if (i === currentQ) updateButtons();
     });
   }
 
   function updateProgress() {
-    const count = answered.size;
     const fill = document.getElementById('progressFill');
     const label = document.getElementById('progressCount');
-    fill.style.width = (count / TOTAL * 100) + '%';
-    label.textContent = count + ' / ' + TOTAL;
-    const btn = document.getElementById('submitBtn');
-    const note = document.getElementById('submitNote');
-    if (count === TOTAL) {
-      btn.disabled = false;
-      note.textContent = 'Alle vragen beantwoord. Klaar om in te dienen.';
-    } else {
-      btn.disabled = true;
-      note.textContent = `Nog ${TOTAL - count} vraag/vragen te beantwoorden (min. ${MIN_CHARS} tekens per antwoord).`;
-    }
+    // Vullen t.e.m. vorige vraag; huidige is in progress
+    fill.style.width = ((currentQ - 1) / TOTAL * 100) + '%';
+    label.textContent = 'V' + currentQ + ' / ' + TOTAL;
   }
 
   // ════════════════ SUBMIT ════════════════
