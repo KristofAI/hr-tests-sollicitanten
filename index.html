@@ -3,72 +3,298 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#434A55">
+<link rel="manifest" href="manifest.json">
 <title>HR Selectieprocedure — United Consulting</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
   :root {
     --charcoal: #434A55;
-    --text: #424B55;
+    --charcoal-dark: #2e333c;
     --border: #E3E7EE;
+    --border-mid: #D8DCE3;
+    --text: #424B55;
+    --muted: #888;
+    --accent-bg: #EAEDF2;
+    --wrong: #a0341e;
     --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
+
+  html { scroll-behavior: smooth; }
+
   body {
     font-family: var(--font-stack);
     background: #F5F6F8;
     color: var(--text);
     min-height: 100vh;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--charcoal);
+    padding: 0 2.5rem;
+    height: 56px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 2rem;
+    justify-content: space-between;
   }
-  .card {
-    background: #fff;
-    border: 1px solid var(--border);
-    max-width: 520px;
-    width: 100%;
+  .topbar-brand { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { width: 22px; height: 22px; background: #fff; opacity: 0.9; }
+  .topbar-name {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 3px; color: #fff;
+  }
+
+  /* ── LAYOUT ── */
+  .page-wrap { max-width: 780px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadein 0.25s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ── WELCOME CARD ── */
+  .welcome-card {
+    background: var(--charcoal);
     padding: 3rem 2.5rem;
-    text-align: center;
-  }
-  .brand {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    color: var(--charcoal);
     margin-bottom: 1.5rem;
   }
-  h1 {
-    font-size: 20px;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: var(--charcoal);
-    margin-bottom: 0.5rem;
+  .welcome-card .tag {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2.5px; color: rgba(255,255,255,0.45); margin-bottom: 12px;
   }
-  h1 strong { font-weight: 700; }
-  p {
-    font-size: 13px;
-    color: #777;
-    line-height: 1.7;
-    margin-top: 1.5rem;
+  .welcome-card h1 {
+    font-size: 26px; font-weight: 300; text-transform: uppercase;
+    letter-spacing: 2px; color: #fff; margin-bottom: 8px; line-height: 1.3;
   }
+  .welcome-card h1 strong { font-weight: 700; }
+  .welcome-card p {
+    font-size: 13px; color: rgba(255,255,255,0.75);
+    margin-top: 1.25rem; line-height: 1.7;
+  }
+
+  /* ── START CARD (NAAM INVOER) ── */
+  .start-card {
+    background: #fff; border: 1px solid var(--border);
+    padding: 2rem 2.5rem;
+  }
+  .start-card label {
+    display: block; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--charcoal); margin-bottom: 10px;
+  }
+  .start-card input {
+    width: 100%; border: none; border-bottom: 2px solid var(--border-mid);
+    padding: 10px 0; font-family: var(--font-stack); font-size: 15px;
+    color: var(--text); background: transparent; outline: none;
+    transition: border-color 0.2s;
+  }
+  .start-card input:focus { border-bottom-color: var(--charcoal); }
+  .start-card input::placeholder { color: #ccc; }
+  .start-actions {
+    margin-top: 2rem; display: flex; justify-content: flex-end;
+    align-items: center; gap: 1rem;
+  }
+  .start-error { font-size: 11px; color: var(--wrong); display: none; }
+  .start-error.show { display: block; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    background: var(--charcoal); color: #fff; border: none;
+    padding: 14px 40px; font-family: var(--font-stack);
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2.5px; cursor: pointer; transition: background 0.2s;
+  }
+  .btn:hover { background: var(--charcoal-dark); }
+  .btn.secondary {
+    background: transparent; color: var(--charcoal);
+    border: 1.5px solid var(--border-mid);
+    padding: 12px 24px;
+  }
+  .btn.secondary:hover { background: var(--accent-bg); border-color: var(--charcoal); }
+
+  /* ── TEST PICKER ── */
+  .test-grid {
+    display: grid; grid-template-columns: 1fr; gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (min-width: 640px) {
+    .test-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .test-card {
+    display: block;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--charcoal);
+    padding: 1.75rem 1.5rem;
+    text-decoration: none;
+    color: var(--text);
+    transition: transform 0.15s, box-shadow 0.15s, border-left-color 0.2s;
+    cursor: pointer;
+  }
+  .test-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(67,74,85,0.1);
+    border-left-color: var(--charcoal-dark);
+  }
+  .test-card-label {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--muted); margin-bottom: 10px;
+  }
+  .test-card-title {
+    font-size: 18px; font-weight: 700;
+    color: var(--charcoal); line-height: 1.3;
+    margin-bottom: 14px;
+  }
+  .test-card-meta {
+    font-size: 11px; color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+  .test-card-arrow {
+    display: inline-block; float: right;
+    font-size: 18px; color: var(--charcoal);
+    transition: transform 0.15s;
+  }
+  .test-card:hover .test-card-arrow { transform: translateX(4px); }
+
+  /* ── CHANGE-NAME LINK ── */
+  .change-name-row {
+    display: flex; justify-content: center;
+    margin-top: 1rem;
+  }
+  .change-name-btn {
+    background: none; border: none;
+    font-family: var(--font-stack);
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--muted);
+    cursor: pointer; padding: 8px 14px;
+    text-decoration: underline;
+  }
+  .change-name-btn:hover { color: var(--charcoal); }
+
+  /* ── FOOTER ── */
   .footer {
-    margin-top: 2.5rem;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: #bbb;
+    text-align: center; padding: 2rem 0 0;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 2px; color: #bbb;
   }
 </style>
 </head>
 <body>
-  <div class="card">
-    <div class="brand">United Consulting™</div>
-    <h1>HR<br><strong>Selectieprocedure</strong></h1>
-    <p>Welkom. Deze pagina bevat de HR-kennistoetsen voor onze selectieprocedure.<br><br>
-    Gebruik de specifieke link die je van je recruiter hebt ontvangen om de juiste test te starten.</p>
-    <div class="footer">www.unitedconsulting.be</div>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo"></div>
+    <span class="topbar-name">United Consulting™</span>
   </div>
+</div>
+
+<div class="page-wrap">
+
+  <!-- ════════════════ SCHERM 1: NAAM INVOER ════════════════ -->
+  <div class="screen active" id="screen-name">
+    <div class="welcome-card">
+      <div class="tag">Selectieprocedure United HR</div>
+      <h1>HR<br><strong>Selectieprocedure</strong></h1>
+      <p>Welkom bij de HR selectieprocedure van United Consulting.<br>
+      Vul hieronder je naam in om verder te gaan. Je recruiter heeft aangegeven welke test(s) je vandaag moet afleggen.</p>
+    </div>
+
+    <div class="start-card">
+      <label for="candidateName">Naam kandidaat</label>
+      <input type="text" id="candidateName" placeholder="Voor- en achternaam" autocomplete="name" autofocus>
+      <div class="start-actions">
+        <span class="start-error" id="nameError">Vul je voor- en achternaam in.</span>
+        <button type="button" class="btn" onclick="goToPicker()">Verder →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ SCHERM 2: TEST KEUZE ════════════════ -->
+  <div class="screen" id="screen-picker">
+    <div class="welcome-card">
+      <div class="tag">Welkom</div>
+      <h1>Hallo,<br><strong id="pickerName">kandidaat</strong></h1>
+      <p>Klik op de test die je recruiter jou heeft voorgesteld.<br>
+      Je krijgt op de volgende pagina de instructies en kan daar de test starten.</p>
+    </div>
+
+    <div class="test-grid">
+      <a href="hard-skills.html" class="test-card">
+        <div class="test-card-label">HR · Hard Skills <span class="test-card-arrow">→</span></div>
+        <div class="test-card-title">Sociale<br>Wetgeving</div>
+        <div class="test-card-meta">15 meerkeuzevragen &nbsp;·&nbsp; 8 minuten</div>
+      </a>
+      <a href="soft-skills.html" class="test-card">
+        <div class="test-card-label">HR · Soft Skills <span class="test-card-arrow">→</span></div>
+        <div class="test-card-title">Recruitment<br>Casestudy</div>
+        <div class="test-card-meta">6 open vragen &nbsp;·&nbsp; 20 minuten</div>
+      </a>
+    </div>
+
+    <div class="change-name-row">
+      <button type="button" class="change-name-btn" onclick="changeCandidate()">Andere naam invoeren</button>
+    </div>
+  </div>
+
+  <div class="footer">United Consulting™ &nbsp;·&nbsp; www.unitedconsulting.be</div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'hr-candidate-name';
+
+  // ════════════════ SERVICE WORKER ════════════════
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW registratie faalde:', err));
+    });
+  }
+
+  // ════════════════ SCREEN NAV ════════════════
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function goToPicker() {
+    const input = document.getElementById('candidateName');
+    const name = input.value.trim();
+    const err = document.getElementById('nameError');
+    if (name.length < 2 || !name.includes(' ')) {
+      err.classList.add('show');
+      input.focus();
+      return;
+    }
+    err.classList.remove('show');
+    sessionStorage.setItem(STORAGE_KEY, name);
+    document.getElementById('pickerName').textContent = name;
+    showScreen('picker');
+  }
+
+  function changeCandidate() {
+    sessionStorage.removeItem(STORAGE_KEY);
+    const input = document.getElementById('candidateName');
+    input.value = '';
+    showScreen('name');
+    setTimeout(() => input.focus(), 200);
+  }
+
+  // Enter-toets in het naam-veld = doorgaan
+  document.getElementById('candidateName').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); goToPicker(); }
+  });
+
+  // ════════════════ BIJ PAGE LOAD ════════════════
+  window.addEventListener('load', () => {
+    const stored = sessionStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      document.getElementById('pickerName').textContent = stored;
+      document.getElementById('candidateName').value = stored;
+      showScreen('picker');
+    }
+  });
+</script>
 </body>
 </html>

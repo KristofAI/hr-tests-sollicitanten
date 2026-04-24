@@ -678,6 +678,7 @@
     }
     nameError.classList.remove('show');
     candidateName = name;
+    sessionStorage.setItem('hr-candidate-name', name);
     testStartTs = Date.now();
     document.getElementById('topbarRight').style.visibility = 'visible';
     showScreen('test');
@@ -922,6 +923,12 @@
   // Op page-load: check of er een pending verzending is van vorige sessie
   window.addEventListener('load', () => {
     updateConnStatus();
+    // Prefill naam vanuit sessionStorage (ingevuld op landingspagina)
+    const storedName = sessionStorage.getItem('hr-candidate-name');
+    if (storedName) {
+      const input = document.getElementById('candidateName');
+      if (input) input.value = storedName;
+    }
     const pending = localStorage.getItem(PENDING_KEY);
     if (pending) {
       showScreen('results');
