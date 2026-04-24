@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#434A55">
+<link rel="manifest" href="manifest.json">
 <title>HR Soft Skills — Recruitment — United Consulting</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -17,12 +18,13 @@
     --muted: #888;
     --accent-bg: #EAEDF2;
     --wrong: #a0341e;
+    --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 
   html { scroll-behavior: smooth; }
 
   body {
-    font-family: 'Montserrat', sans-serif;
+    font-family: var(--font-stack);
     background: #F5F6F8;
     color: var(--text);
     min-height: 100vh;
@@ -132,7 +134,7 @@
   }
   .start-card input {
     width: 100%; border: none; border-bottom: 2px solid var(--border-mid);
-    padding: 10px 0; font-family: 'Montserrat', sans-serif; font-size: 15px;
+    padding: 10px 0; font-family: var(--font-stack); font-size: 15px;
     color: var(--text); background: transparent; outline: none;
     transition: border-color 0.2s;
   }
@@ -143,6 +145,28 @@
   }
   .start-error { font-size: 11px; color: var(--wrong); display: none; }
   .start-error.show { display: block; }
+
+  /* ── CONNECTIVITY PILL ── */
+  .conn-pill {
+    margin-top: 1rem;
+    padding: 14px 18px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-left: 4px solid #f5b041;
+    display: flex; align-items: center; gap: 14px;
+    font-size: 12.5px; color: var(--text); line-height: 1.5;
+  }
+  .conn-pill.offline { border-left-color: #2e7d52; background: #eaf4ee; }
+  .conn-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #f5b041; flex-shrink: 0;
+    animation: pulse-dot 1.5s infinite;
+  }
+  .conn-pill.offline .conn-dot { background: #2e7d52; animation: none; }
+  @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ── EMAIL STATUS VARIANTS ── */
+  .email-status.waiting { color: rgba(245,176,65,0.9); }
 
   /* ── QUESTION CARD (WIZARD MODE) ── */
   .question-card {
@@ -169,7 +193,7 @@
     width: 100%; min-height: 160px;
     border: 1px solid var(--border);
     padding: 12px 14px;
-    font-family: 'Montserrat', sans-serif;
+    font-family: var(--font-stack);
     font-size: 13px; color: var(--text);
     line-height: 1.6; resize: vertical;
     outline: none; transition: border-color 0.2s;
@@ -197,7 +221,7 @@
   /* ── BUTTONS ── */
   .btn {
     background: var(--charcoal); color: #fff; border: none;
-    padding: 14px 40px; font-family: 'Montserrat', sans-serif;
+    padding: 14px 40px; font-family: var(--font-stack);
     font-size: 11px; font-weight: 700; text-transform: uppercase;
     letter-spacing: 2.5px; cursor: pointer; transition: background 0.2s;
   }
@@ -276,7 +300,8 @@
       De bedoeling is dat je onderstaande vragen zo concreet en volledig mogelijk beantwoordt, gebruikmakend van je eigen ervaring binnen recruitment.<br><br>
       Tools zoals AI en opzoekingen op internet zijn <strong>niet toegestaan</strong>.<br>
       Je krijgt <strong>één vraag per scherm</strong>. Zodra je op <em>"Volgende vraag"</em> klikt, kan je niet meer terug naar een vorige vraag.<br>
-      Je hebt <strong>20 minuten</strong> tijd vanaf het moment dat je de test start. Wanneer de tijd op is, worden je antwoorden automatisch ingediend.</p>
+      Je hebt <strong>20 minuten</strong> tijd vanaf het moment dat je de test start. Wanneer de tijd op is, worden je antwoorden automatisch ingediend.<br><br>
+      <strong>Schakel je WiFi uit voor je start.</strong> De test werkt volledig offline — je antwoorden worden automatisch verstuurd zodra je terug online komt.</p>
       <div class="welcome-meta">
         <div class="welcome-meta-item">
           <div class="val">6</div>
@@ -298,8 +323,13 @@
       <input type="text" id="candidateName" placeholder="Voor- en achternaam" autocomplete="name">
       <div class="start-actions">
         <span class="start-error" id="nameError">Vul je voor- en achternaam in.</span>
-        <button type="button" class="btn" onclick="startTest()">Start de test</button>
+        <button type="button" class="btn" id="startBtn" onclick="startTest()">Start de test</button>
       </div>
+    </div>
+
+    <div class="conn-pill" id="connPill">
+      <span class="conn-dot"></span>
+      <span class="conn-text">Je bent <strong>online</strong> — schakel WiFi uit om te starten</span>
     </div>
   </div>
 
@@ -419,11 +449,64 @@
     q5: 'Stel dat je een kandidaat voorstelt aan de hiring manager waar jij volledig achter staat, maar de hiring manager niet. Welke argumenten zal jij hanteren om de hiring manager toch te kunnen overtuigen?',
     q6: 'Stel je hebt na 2 maanden nog geen resultaat. Welke nieuwe of bestaande acties zou je opnieuw invoeren, rekening houdend met het opgelegde budget?'
   };
+  const PENDING_KEY = 'hr-soft-skills-pending';
   let currentQ = 1;
   let candidateName = '';
   let timerInterval = null;
   let timeLeft = TIME_LIMIT_SECONDS;
   let testSubmitted = false;
+  let testStartTs = null;
+  const visibilityEvents = [];
+
+  // ════════════════ SERVICE WORKER ════════════════
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW registratie faalde:', err));
+    });
+  }
+
+  // ════════════════ CONNECTIVITY ════════════════
+  function updateConnStatus() {
+    const pill = document.getElementById('connPill');
+    if (!pill) return;
+    const text = pill.querySelector('.conn-text');
+    if (navigator.onLine) {
+      pill.classList.remove('offline');
+      text.innerHTML = 'Je bent <strong>online</strong> — schakel WiFi uit om te starten';
+    } else {
+      pill.classList.add('offline');
+      text.innerHTML = 'Je bent <strong>offline</strong> — klaar om te starten';
+    }
+  }
+  window.addEventListener('online', () => { updateConnStatus(); retryPending(); });
+  window.addEventListener('offline', updateConnStatus);
+
+  // ════════════════ VISIBILITY TRACKING ════════════════
+  function logVisibility(type) {
+    if (!testStartTs || testSubmitted) return;
+    visibilityEvents.push({ type, at: Date.now() });
+  }
+  document.addEventListener('visibilitychange', () => logVisibility(document.hidden ? 'hidden' : 'visible'));
+  window.addEventListener('blur', () => logVisibility('blur'));
+  window.addEventListener('focus', () => logVisibility('focus'));
+
+  function summarizeVisibility() {
+    if (!testStartTs) return null;
+    const awayStarts = visibilityEvents.filter(e => e.type === 'hidden' || e.type === 'blur');
+    if (awayStarts.length === 0) return { awayCount: 0, awayMs: 0, awaySec: 0, clean: true };
+    let awayMs = 0;
+    let currentAwayStart = null;
+    for (const e of visibilityEvents) {
+      if ((e.type === 'hidden' || e.type === 'blur') && currentAwayStart === null) {
+        currentAwayStart = e.at;
+      } else if ((e.type === 'visible' || e.type === 'focus') && currentAwayStart !== null) {
+        awayMs += e.at - currentAwayStart;
+        currentAwayStart = null;
+      }
+    }
+    if (currentAwayStart !== null) awayMs += Date.now() - currentAwayStart;
+    return { awayCount: awayStarts.length, awayMs, awaySec: Math.round(awayMs / 1000), clean: false };
+  }
 
   // ════════════════ NAVIGATION ════════════════
   function showScreen(name) {
@@ -435,12 +518,21 @@
   function startTest() {
     const input = document.getElementById('candidateName');
     const name = input.value.trim();
+    const nameError = document.getElementById('nameError');
     if (name.length < 2 || !name.includes(' ')) {
-      document.getElementById('nameError').classList.add('show');
+      nameError.textContent = 'Vul je voor- en achternaam in.';
+      nameError.classList.add('show');
       input.focus();
       return;
     }
+    if (navigator.onLine) {
+      nameError.textContent = 'Schakel je WiFi uit voor je de test start.';
+      nameError.classList.add('show');
+      return;
+    }
+    nameError.classList.remove('show');
     candidateName = name;
+    testStartTs = Date.now();
     document.getElementById('topbarRight').style.visibility = 'visible';
     showScreen('test');
     currentQ = 1;
@@ -571,19 +663,22 @@
     }
     document.getElementById('rName').textContent = candidateName;
     showScreen('results');
-    sendResults(answers, { autoSubmitted: !!autoSubmitted, timeUsedSeconds: timeUsed });
+    const payload = buildPayload(answers, { autoSubmitted: !!autoSubmitted, timeUsedSeconds: timeUsed, vis: summarizeVisibility() });
+    localStorage.setItem(PENDING_KEY, JSON.stringify(payload));
+    attemptSend();
   }
 
-  async function sendResults(answers, meta) {
-    const statusEl = document.getElementById('emailStatus');
-    statusEl.textContent = 'Antwoorden worden verstuurd...';
-
+  function buildPayload(answers, meta) {
     const date = new Date().toLocaleString('nl-BE', { dateStyle: 'short', timeStyle: 'short' });
     const subject = `${TEST_NAME} – ${candidateName}`;
     const timeUsedStr = formatTime(meta.timeUsedSeconds) + ' / ' + formatTime(TIME_LIMIT_SECONDS);
     const submitMode = meta.autoSubmitted
       ? 'Automatisch ingediend (tijd verstreken)'
       : 'Manueel ingediend door kandidaat';
+    const vis = meta.vis;
+    const visText = (vis && !vis.clean)
+      ? `Tab verlaten tijdens test: ${vis.awayCount} keer (totaal ±${vis.awaySec}s) — mogelijke afleiding`
+      : 'Tab verlaten tijdens test: 0 keer (geen gedetecteerde afleiding)';
 
     const textLines = [
       `Kandidaat: ${candidateName}`,
@@ -591,6 +686,7 @@
       `Datum: ${date}`,
       `Tijd gebruikt: ${timeUsedStr}`,
       `Inzending: ${submitMode}`,
+      visText,
       '',
       '═══════════════════════════════════════',
       ''
@@ -622,30 +718,74 @@
           <div style="font-size:13px;opacity:0.7;margin-top:4px;">${date}</div>
           <div style="font-size:12px;opacity:0.75;margin-top:12px;">Tijd gebruikt: <strong>${timeUsedStr}</strong> &nbsp;·&nbsp; ${submitMode}</div>
         </div>
+        ${(vis && !vis.clean) ? `<div style="margin-top:0;padding:12px 16px;background:#fff8e7;border-left:4px solid #d4a017;font-size:12px;color:#6b5200;"><strong>⚠ Let op:</strong> kandidaat heeft de tab <strong>${vis.awayCount} keer verlaten</strong> tijdens deze test (totaal ±${vis.awaySec} seconden). Dit kan wijzen op opzoekingen of afleiding.</div>` : ''}
         <div style="padding:0 4px;">${blocksHtml}</div>
         <div style="margin-top:32px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#bbb;text-align:center;">www.unitedconsulting.be</div>
       </div>`;
+
+    return { testName: TEST_NAME, candidateName, subject, textBody, htmlBody };
+  }
+
+  // ════════════════ SEND / RETRY ════════════════
+  let sendInFlight = false;
+  async function attemptSend() {
+    const pending = localStorage.getItem(PENDING_KEY);
+    if (!pending) return;
+    const statusEl = document.getElementById('emailStatus');
+    if (!statusEl) return;
+    if (sendInFlight) return;
+
+    if (!navigator.onLine) {
+      statusEl.className = 'email-status waiting';
+      statusEl.innerHTML = '⏳ Wachten op internetverbinding — schakel WiFi terug aan om je antwoorden te versturen';
+      return;
+    }
+
+    sendInFlight = true;
+    statusEl.className = 'email-status';
+    statusEl.textContent = 'Antwoorden worden verstuurd...';
 
     try {
       const res = await fetch(API_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          testName: TEST_NAME,
-          candidateName: candidateName,
-          subject: subject,
-          textBody: textBody,
-          htmlBody: htmlBody
-        })
+        body: pending
       });
       if (!res.ok) throw new Error('Server error');
+      localStorage.removeItem(PENDING_KEY);
       statusEl.className = 'email-status sent';
       statusEl.textContent = '✓ Antwoorden succesvol verstuurd naar de recruiter.';
     } catch (err) {
       statusEl.className = 'email-status error';
-      statusEl.textContent = '⚠ Kon niet automatisch versturen. Laat de recruiter weten dat de test is voltooid.';
+      statusEl.textContent = '⚠ Verzending mislukt. Nieuwe poging over 5 seconden...';
+      setTimeout(attemptSend, 5000);
+    } finally {
+      sendInFlight = false;
     }
   }
+
+  function retryPending() {
+    if (localStorage.getItem(PENDING_KEY)) attemptSend();
+  }
+
+  // Op page-load: check of er een pending verzending is van vorige sessie
+  window.addEventListener('load', () => {
+    updateConnStatus();
+    const pending = localStorage.getItem(PENDING_KEY);
+    if (pending) {
+      showScreen('results');
+      const rc = document.querySelector('#screen-results .results-card');
+      if (rc) {
+        rc.innerHTML = `
+          <div class="r-label">Eerder voltooide test</div>
+          <h2>Je antwoorden wachten op verzending</h2>
+          <div class="r-message">Je hebt deze test eerder voltooid maar er was toen geen internetverbinding. We proberen het nu automatisch opnieuw zodra je online bent.</div>
+          <div class="email-status" id="emailStatus"></div>
+        `;
+      }
+      attemptSend();
+    }
+  });
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

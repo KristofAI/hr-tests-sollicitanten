@@ -1,0 +1,21 @@
+{
+  "name": "United Consulting HR Selectieprocedure",
+  "short_name": "UC HR Tests",
+  "description": "HR kennistoetsen voor sollicitanten bij United Consulting",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F5F6F8",
+  "theme_color": "#434A55",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23434A55'/><rect x='76' y='76' width='40' height='40' fill='white' opacity='0.9'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%23434A55'/><rect x='200' y='200' width='112' height='112' fill='white' opacity='0.9'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
