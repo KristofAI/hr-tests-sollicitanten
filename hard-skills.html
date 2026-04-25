@@ -93,6 +93,19 @@
     text-transform: uppercase;
   }
 
+  /* Online warning during test (sticky) */
+  .online-warning {
+    position: sticky; top: 56px; z-index: 50;
+    background: #a0341e; color: #fff;
+    padding: 14px 20px; text-align: center;
+    font-size: 12.5px; font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    display: none;
+  }
+  .online-warning.show { display: block; animation: slidedown 0.3s ease; }
+  @keyframes slidedown { from { transform: translateY(-100%); } to { transform: none; } }
+
   /* ── LAYOUT ── */
   .page-wrap { max-width: 780px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
 
@@ -305,6 +318,10 @@
       <span class="progress-count" id="progressCount">0 / 15</span>
     </div>
   </div>
+</div>
+
+<div class="online-warning" id="onlineWarning">
+  ⚠ Je bent terug online. Schakel je WiFi opnieuw uit. <span style="opacity:0.85;font-weight:400;">(Dit moment wordt gelogd voor de recruiter.)</span>
 </div>
 
 <div class="page-wrap">
@@ -592,6 +609,7 @@
   let testSubmitted = false;
   let testStartTs = null;
   const visibilityEvents = [];
+  const onlineEvents = [];
 
   // ════════════════ SERVICE WORKER ════════════════
   if ('serviceWorker' in navigator) {
@@ -613,8 +631,41 @@
       text.innerHTML = 'Je bent <strong>offline</strong> — klaar om te starten';
     }
   }
-  window.addEventListener('online', () => { updateConnStatus(); retryPending(); });
-  window.addEventListener('offline', updateConnStatus);
+  window.addEventListener('online', () => {
+    updateConnStatus();
+    retryPending();
+    if (testStartTs && !testSubmitted) {
+      onlineEvents.push({ type: 'online', at: Date.now() });
+      const w = document.getElementById('onlineWarning');
+      if (w) w.classList.add('show');
+    }
+  });
+  window.addEventListener('offline', () => {
+    updateConnStatus();
+    if (testStartTs && !testSubmitted) {
+      onlineEvents.push({ type: 'offline', at: Date.now() });
+      const w = document.getElementById('onlineWarning');
+      if (w) w.classList.remove('show');
+    }
+  });
+
+  function summarizeOnlineDuringTest() {
+    if (!testStartTs) return { count: 0, sec: 0 };
+    let onlineMs = 0;
+    let currentOnlineStart = null;
+    for (const e of onlineEvents) {
+      if (e.type === 'online' && currentOnlineStart === null) currentOnlineStart = e.at;
+      else if (e.type === 'offline' && currentOnlineStart !== null) {
+        onlineMs += e.at - currentOnlineStart;
+        currentOnlineStart = null;
+      }
+    }
+    if (currentOnlineStart !== null) onlineMs += Date.now() - currentOnlineStart;
+    return {
+      count: onlineEvents.filter(e => e.type === 'online').length,
+      sec: Math.round(onlineMs / 1000)
+    };
+  }
 
   // ════════════════ VISIBILITY TRACKING ════════════════
   function logVisibility(type) {
@@ -804,7 +855,12 @@
 
     showScreen('results');
     const timeUsed = TIME_LIMIT_SECONDS - Math.max(0, timeLeft);
-    const payload = buildPayload(score, pct, results, { autoSubmitted: !!autoSubmitted, timeUsedSeconds: timeUsed, vis: summarizeVisibility() });
+    const payload = buildPayload(score, pct, results, {
+      autoSubmitted: !!autoSubmitted,
+      timeUsedSeconds: timeUsed,
+      vis: summarizeVisibility(),
+      online: summarizeOnlineDuringTest()
+    });
     localStorage.setItem(PENDING_KEY, JSON.stringify(payload));
     attemptSend();
   }
@@ -821,6 +877,10 @@
     const visText = (vis && !vis.clean)
       ? `Tab verlaten tijdens test: ${vis.awayCount} keer (totaal ±${vis.awaySec}s) — mogelijke afleiding`
       : 'Tab verlaten tijdens test: 0 keer (geen gedetecteerde afleiding)';
+    const online = meta.online || { count: 0, sec: 0 };
+    const onlineText = online.count > 0
+      ? `Online tijdens test: ${online.count} keer (totaal ±${online.sec}s) — mogelijke opzoekingen`
+      : 'Online tijdens test: 0 keer (volledig offline)';
 
     const textLines = [
       `Kandidaat: ${candidateName}`,
@@ -829,6 +889,7 @@
       `Tijd gebruikt: ${timeUsedStr}`,
       `Inzending: ${submitMode}`,
       visText,
+      onlineText,
       `Score: ${score} / ${TOTAL} (${pct}%)`,
       '',
       '─────────── Detail per vraag ───────────',
@@ -859,7 +920,8 @@
           <div style="font-size:12px;opacity:0.75;margin-top:8px;">Tijd gebruikt: <strong>${timeUsedStr}</strong> &nbsp;·&nbsp; ${submitMode}</div>
           <div style="margin-top:16px;font-size:30px;font-weight:700;">${score} / ${TOTAL} <span style="font-size:14px;opacity:0.6;font-weight:400;">(${pct}%)</span></div>
         </div>
-        ${(vis && !vis.clean) ? `<div style="margin-top:0;padding:12px 16px;background:#fff8e7;border-left:4px solid #d4a017;font-size:12px;color:#6b5200;"><strong>⚠ Let op:</strong> kandidaat heeft de tab <strong>${vis.awayCount} keer verlaten</strong> tijdens deze test (totaal ±${vis.awaySec} seconden). Dit kan wijzen op opzoekingen of afleiding.</div>` : ''}
+        ${(vis && !vis.clean) ? `<div style="margin-top:0;padding:12px 16px;background:#fff8e7;border-left:4px solid #d4a017;font-size:12px;color:#6b5200;"><strong>⚠ Tab verlaten:</strong> kandidaat heeft de tab <strong>${vis.awayCount} keer verlaten</strong> tijdens deze test (totaal ±${vis.awaySec} seconden). Dit kan wijzen op opzoekingen of afleiding.</div>` : ''}
+        ${(online.count > 0) ? `<div style="margin-top:0;padding:12px 16px;background:#fdecec;border-left:4px solid #a0341e;font-size:12px;color:#6e2616;"><strong>⚠ Online tijdens test:</strong> kandidaat is <strong>${online.count} keer terug online gekomen</strong> tijdens de test (totaal ±${online.sec} seconden). Dit kan wijzen op het opzoeken van antwoorden.</div>` : ''}
         <table style="width:100%;border-collapse:collapse;margin-top:16px;font-family:Arial,sans-serif;">
           <thead>
             <tr style="background:#EAEDF2;">
@@ -875,7 +937,21 @@
         <div style="margin-top:24px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#bbb;text-align:center;">www.unitedconsulting.be</div>
       </div>`;
 
-    return { testName: TEST_NAME, candidateName, subject, textBody, htmlBody };
+    const structuredMeta = {
+      score: score,
+      totalQuestions: TOTAL,
+      percentage: pct,
+      timeUsedSec: meta.timeUsedSeconds,
+      timeLimitSec: TIME_LIMIT_SECONDS,
+      autoSubmitted: !!meta.autoSubmitted,
+      awayCount: vis ? vis.awayCount : 0,
+      awaySec: vis ? vis.awaySec : 0,
+      onlineCount: online.count,
+      onlineSec: online.sec,
+      submittedAtClient: new Date().toISOString()
+    };
+
+    return { testName: TEST_NAME, candidateName, subject, textBody, htmlBody, meta: structuredMeta };
   }
 
   // ════════════════ SEND / RETRY ════════════════
