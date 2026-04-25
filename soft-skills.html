@@ -754,6 +754,13 @@
     attemptSend();
   }
 
+  function generateSubmissionId() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID().replace(/-/g, '');
+    }
+    return 'sid_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 14);
+  }
+
   function buildPayload(answers, meta) {
     const date = new Date().toLocaleString('nl-BE', { dateStyle: 'short', timeStyle: 'short' });
     const subject = `${TEST_NAME} – ${candidateName}`;
@@ -829,7 +836,15 @@
       submittedAtClient: new Date().toISOString()
     };
 
-    return { testName: TEST_NAME, candidateName, subject, textBody, htmlBody, meta: structuredMeta };
+    return {
+      submissionId: generateSubmissionId(),
+      testName: TEST_NAME,
+      candidateName,
+      subject,
+      textBody,
+      htmlBody,
+      meta: structuredMeta
+    };
   }
 
   // ════════════════ SEND / RETRY ════════════════
