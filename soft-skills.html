@@ -272,6 +272,32 @@
   .email-status.sent { color: rgba(180,240,200,0.8); }
   .email-status.error { color: rgba(255,180,160,0.8); }
 
+  /* ── RESULT ACTIONS (back-naar-home) ── */
+  .result-actions {
+    margin-top: 1.5rem;
+    display: flex; justify-content: center; gap: 12px;
+    flex-wrap: wrap;
+  }
+  .btn-link {
+    display: inline-block;
+    background: transparent;
+    color: var(--charcoal);
+    border: 1.5px solid var(--border-mid);
+    padding: 12px 28px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    text-decoration: none;
+    font-weight: 700;
+    font-family: var(--font-stack);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .btn-link:hover {
+    border-color: var(--charcoal);
+    background: var(--accent-bg);
+  }
+
   .footer {
     text-align: center; padding: 2rem 0 0;
     font-size: 10px; text-transform: uppercase;
@@ -441,6 +467,9 @@
       <h2>Bedankt,<br><strong id="rName">kandidaat</strong></h2>
       <div class="r-message">Je antwoorden werden ingediend en worden bezorgd aan de recruiter van United Consulting. Een recruiter zal jouw input bekijken en tijdens het gesprek op bepaalde elementen verder ingaan.</div>
       <div class="email-status" id="emailStatus"></div>
+    </div>
+    <div class="result-actions">
+      <a href="index.html" class="btn-link">← Terug naar startscherm</a>
     </div>
   </div>
 
@@ -828,10 +857,17 @@
         headers: { 'Content-Type': 'application/json' },
         body: pending
       });
-      if (!res.ok) throw new Error('Server error');
+      if (!res.ok) throw new Error('Server error ' + res.status);
+      const data = await res.json().catch(() => ({}));
+      // Submission is opgeslagen (Firestore) — niet meer retryen
       localStorage.removeItem(PENDING_KEY);
-      statusEl.className = 'email-status sent';
-      statusEl.textContent = '✓ Antwoorden succesvol verstuurd naar de recruiter.';
+      if (data.mailSent) {
+        statusEl.className = 'email-status sent';
+        statusEl.textContent = '✓ Antwoorden succesvol verstuurd naar de recruiter.';
+      } else {
+        statusEl.className = 'email-status waiting';
+        statusEl.innerHTML = '✓ Je antwoorden zijn opgeslagen. <span style="opacity:0.85;font-weight:400;">De email naar de recruiter wordt later geleverd.</span>';
+      }
     } catch (err) {
       statusEl.className = 'email-status error';
       statusEl.textContent = '⚠ Verzending mislukt. Nieuwe poging over 5 seconden...';
