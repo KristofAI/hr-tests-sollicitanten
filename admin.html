@@ -229,6 +229,20 @@
   .detail-close:hover { color: #fff; border-color: #fff; }
 
   .detail-body { padding: 1.5rem; }
+  .detail-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end; align-items: center; gap: 12px;
+    background: #FAFAFA;
+  }
+  .btn-danger {
+    background: var(--wrong); color: #fff; border: none;
+    padding: 10px 24px; font-family: var(--font-stack);
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; cursor: pointer; transition: background 0.15s;
+  }
+  .btn-danger:hover { background: #7a2615; }
+  .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
   .detail-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 1rem; margin-bottom: 1.5rem;
@@ -284,6 +298,7 @@
     <span class="topbar-section" style="margin-left:8px;border-left:1px solid rgba(255,255,255,0.2);padding-left:14px;">Admin Dashboard</span>
   </div>
   <div class="topbar-actions" id="topbarActions" style="display:none;">
+    <button class="topbar-btn" onclick="exportCsv()">⬇ Export CSV</button>
     <button class="topbar-btn" onclick="loadResults()">↻ Refresh</button>
     <button class="topbar-btn" onclick="logout()">Logout</button>
   </div>
@@ -351,6 +366,9 @@
         <button class="detail-close" onclick="closeDetail()">Sluiten ✕</button>
       </div>
       <div class="detail-body" id="detailBody"></div>
+      <div class="detail-footer">
+        <button class="btn-danger" id="deleteBtn" onclick="deleteSelected()">🗑 Verwijder deze entry</button>
+      </div>
     </div>
   </div>
 
@@ -361,6 +379,7 @@
   // ════════════════ CONFIG ════════════════
   const API_BASE = 'https://europe-west1-uc-hr-test-sollicitanten.cloudfunctions.net/hr-tests-mailer';
   const RESULTS_URL = API_BASE + '/results';
+  const DELETE_URL = API_BASE + '/delete-result';
   const PWD_KEY = 'hr-admin-pwd';
 
   let allResults = [];
@@ -545,6 +564,94 @@
     selectedId = null;
     document.querySelectorAll('tbody tr').forEach(tr => tr.classList.remove('selected'));
     document.getElementById('detailPane').classList.remove('show');
+  }
+
+  // ════════════════ DELETE ════════════════
+  async function deleteSelected() {
+    if (!selectedId) return;
+    const r = allResults.find(x => x.id === selectedId);
+    if (!r) return;
+    const label = `${r.testName} — ${r.candidateName}`;
+    if (!confirm(`Weet je zeker dat je deze entry wil verwijderen?\n\n${label}\n\nDit kan niet ongedaan gemaakt worden.`)) return;
+
+    const pwd = sessionStorage.getItem(PWD_KEY);
+    if (!pwd) { logout(); return; }
+    const btn = document.getElementById('deleteBtn');
+    btn.disabled = true; btn.textContent = 'Verwijderen...';
+
+    try {
+      const res = await fetch(DELETE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': pwd },
+        body: JSON.stringify({ id: selectedId })
+      });
+      if (res.status === 401) { logout(); return; }
+      if (!res.ok) throw new Error('Server fout ' + res.status);
+      // Lokale lijst bijwerken
+      allResults = allResults.filter(x => x.id !== selectedId);
+      closeDetail();
+      renderTable();
+    } catch (e) {
+      alert('Verwijderen mislukt: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🗑 Verwijder deze entry';
+    }
+  }
+
+  // ════════════════ CSV EXPORT ════════════════
+  function exportCsv() {
+    const items = applyFilters(allResults);
+    if (items.length === 0) {
+      alert('Geen resultaten om te exporteren (check de filters).');
+      return;
+    }
+    const headers = [
+      'Datum (UTC)', 'Datum (lokaal)', 'Test', 'Kandidaat',
+      'Score', 'Totaal vragen', 'Percentage',
+      'Tijd gebruikt (s)', 'Tijd limiet (s)',
+      'Auto submit', 'Tab verlaten (#)', 'Tab verlaten (s)',
+      'Online (#)', 'Online (s)', 'Submission ID'
+    ];
+    const rows = [headers];
+    for (const r of items) {
+      const m = r.meta || {};
+      const dt = r.submittedAt ? new Date(r.submittedAt) : null;
+      rows.push([
+        dt ? dt.toISOString() : '',
+        dt ? dt.toLocaleString('nl-BE') : '',
+        r.testName || '',
+        r.candidateName || '',
+        m.score != null ? m.score : '',
+        m.totalQuestions != null ? m.totalQuestions : '',
+        m.percentage != null ? m.percentage + '%' : '',
+        m.timeUsedSec != null ? m.timeUsedSec : '',
+        m.timeLimitSec != null ? m.timeLimitSec : '',
+        m.autoSubmitted ? 'Ja' : 'Nee',
+        m.awayCount != null ? m.awayCount : 0,
+        m.awaySec != null ? m.awaySec : 0,
+        m.onlineCount != null ? m.onlineCount : 0,
+        m.onlineSec != null ? m.onlineSec : 0,
+        r.id || ''
+      ]);
+    }
+    // Gebruik puntkomma als separator (beter voor Excel in nl-BE locale) + UTF-8 BOM
+    const csv = rows.map(row => row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      if (/[";\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }).join(';')).join('\r\n');
+
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.download = `hr-tests-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // ════════════════ HELPERS ════════════════
