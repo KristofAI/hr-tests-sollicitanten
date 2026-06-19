@@ -112,7 +112,59 @@
   }
   .btn.secondary:hover { background: var(--accent-bg); border-color: var(--charcoal); }
 
-  /* ── TEST PICKER ── */
+  /* ── FEATURED TEST (Startup Attitude — bovenaan) ── */
+  .featured-test {
+    display: block;
+    background: var(--charcoal);
+    color: #fff;
+    border: 1px solid var(--charcoal);
+    padding: 1.75rem 2rem;
+    margin-bottom: 1rem;
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+  .featured-test:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(67,74,85,0.18);
+    background: var(--charcoal-dark);
+  }
+  .featured-badge {
+    display: inline-block;
+    background: #f5b041;
+    color: var(--charcoal-dark);
+    padding: 3px 10px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+  }
+  .featured-label {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: rgba(255,255,255,0.55); margin-bottom: 10px;
+  }
+  .featured-title {
+    font-size: 22px; font-weight: 700;
+    color: #fff; line-height: 1.25; margin-bottom: 8px;
+  }
+  .featured-title em {
+    font-style: normal; font-weight: 300;
+    display: block; font-size: 14px;
+    color: rgba(255,255,255,0.7); letter-spacing: 1px; margin-top: 6px;
+    text-transform: uppercase;
+  }
+  .featured-meta {
+    font-size: 11px; color: rgba(255,255,255,0.65);
+    margin-top: 14px; padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .featured-arrow { font-size: 18px; color: #fff; opacity: 0.8; }
+  .featured-test:hover .featured-arrow { opacity: 1; transform: translateX(4px); transition: transform 0.15s, opacity 0.15s; }
+
+  /* ── TEST PICKER (kleinere tegels onderaan) ── */
   .test-grid {
     display: grid; grid-template-columns: 1fr; gap: 1rem;
     margin-bottom: 1.5rem;
@@ -219,6 +271,19 @@
       <p>Klik op de test die je recruiter jou heeft voorgesteld.<br>
       Je krijgt op de volgende pagina de instructies en kan daar de test starten.</p>
     </div>
+
+    <a href="startup-attitude.html" class="featured-test">
+      <div class="featured-badge">Nieuw · Aanbevolen</div>
+      <div class="featured-label">HR · Startup Attitude Assessment</div>
+      <div class="featured-title">
+        Wie ben jij op het werk?
+        <em>Een korte zelfreflectie</em>
+      </div>
+      <div class="featured-meta">
+        <span>56 vragen &nbsp;·&nbsp; 10-12 minuten &nbsp;·&nbsp; geen goede of foute antwoorden</span>
+        <span class="featured-arrow">→</span>
+      </div>
+    </a>
 
     <div class="test-grid">
       <a href="hard-skills.html" class="test-card">

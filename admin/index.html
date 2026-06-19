@@ -195,6 +195,11 @@
   }
   .badge.test-hard { background: #e6efe9; color: var(--correct); }
   .badge.test-soft { background: #efe6f0; color: #6b3c70; }
+  .badge.test-attitude { background: #fff3e0; color: #b86a00; }
+  .badge.cat-sterk    { background: #e6efe9; color: #2e7d52; }
+  .badge.cat-solide   { background: #e6eef5; color: #3F7BB6; }
+  .badge.cat-aandacht { background: #fff3e0; color: #b86a00; }
+  .badge.cat-risico   { background: #fdecec; color: var(--wrong); }
   .badge.warn { background: var(--warn-bg); color: #6b5200; }
   .badge.danger { background: var(--wrong-bg); color: var(--wrong); }
   .badge.ok { background: #f0f0f0; color: var(--muted); }
@@ -334,6 +339,7 @@
     <div class="filters">
       <span class="filter-label">Filter</span>
       <button class="chip active" data-filter="all" onclick="setFilter('all')">Alle</button>
+      <button class="chip" data-filter="attitude" onclick="setFilter('attitude')">Startup Attitude</button>
       <button class="chip" data-filter="hard" onclick="setFilter('hard')">Hard Skills</button>
       <button class="chip" data-filter="soft" onclick="setFilter('soft')">Soft Skills</button>
       <button class="chip" data-filter="flagged" onclick="setFilter('flagged')">⚠ Met flags</button>
@@ -467,6 +473,7 @@
     return items.filter(r => {
       if (currentFilter === 'hard' && !/hard/i.test(r.testName)) return false;
       if (currentFilter === 'soft' && !/soft/i.test(r.testName)) return false;
+      if (currentFilter === 'attitude' && !/attitude|startup/i.test(r.testName)) return false;
       if (currentFilter === 'flagged') {
         const m = r.meta || {};
         if (!(m.awayCount > 0 || m.onlineCount > 0 || m.autoSubmitted)) return false;
@@ -491,13 +498,22 @@
       const m = r.meta || {};
       const date = r.submittedAt ? new Date(r.submittedAt).toLocaleString('nl-BE', { dateStyle: 'short', timeStyle: 'short' }) : '—';
       const isHard = /hard/i.test(r.testName);
-      const testBadge = `<span class="badge ${isHard ? 'test-hard' : 'test-soft'}">${isHard ? 'Hard' : 'Soft'}</span>`;
-      const score = (m.score !== null && m.score !== undefined)
-        ? `${m.score} / ${m.totalQuestions} <span style="opacity:0.6">(${m.percentage}%)</span>`
-        : '—';
-      const time = m.timeUsedSec != null
+      const isAttitude = /attitude|startup/i.test(r.testName);
+      const testBadge = isAttitude
+        ? `<span class="badge test-attitude">Attitude</span>`
+        : `<span class="badge ${isHard ? 'test-hard' : 'test-soft'}">${isHard ? 'Hard' : 'Soft'}</span>`;
+      let score;
+      if (m.score === null || m.score === undefined) {
+        score = '—';
+      } else if (isAttitude && m.category) {
+        const catCls = 'cat-' + (m.category || '').toLowerCase();
+        score = `${Number(m.score).toFixed(2)} / 5 <span class="badge ${catCls}" style="margin-left:6px;">${m.category}</span>`;
+      } else {
+        score = `${m.score} / ${m.totalQuestions} <span style="opacity:0.6">(${m.percentage}%)</span>`;
+      }
+      const time = (m.timeUsedSec != null && m.timeLimitSec != null)
         ? `${formatSec(m.timeUsedSec)} / ${formatSec(m.timeLimitSec)}`
-        : '—';
+        : (m.timeUsedSec != null ? formatSec(m.timeUsedSec) : '—');
       const awayBadge = (m.awayCount > 0)
         ? `<span class="badge warn">${m.awayCount}× / ${m.awaySec}s</span>`
         : `<span class="badge ok">0</span>`;
@@ -532,12 +548,29 @@
 
     document.getElementById('detailTitle').innerHTML = `${escapeHtml(r.testName)} — <strong>${escapeHtml(r.candidateName)}</strong>`;
 
+    const isAttitudeDetail = /attitude|startup/i.test(r.testName);
     const stats = [];
-    if (m.score != null) stats.push({ label: 'Score', val: `${m.score} / ${m.totalQuestions} (${m.percentage}%)` });
-    stats.push({ label: 'Tijd gebruikt', val: m.timeUsedSec != null ? `${formatSec(m.timeUsedSec)} / ${formatSec(m.timeLimitSec)}` : '—' });
-    stats.push({ label: 'Inzending', val: m.autoSubmitted ? 'Auto (tijd verstreken)' : 'Manueel', cls: m.autoSubmitted ? 'warn' : '' });
-    stats.push({ label: 'Tab verlaten', val: `${m.awayCount || 0}× (${m.awaySec || 0}s)`, cls: (m.awayCount > 0) ? 'warn' : '' });
-    stats.push({ label: 'Online tijdens test', val: `${m.onlineCount || 0}× (${m.onlineSec || 0}s)`, cls: (m.onlineCount > 0) ? 'danger' : '' });
+    if (m.score != null) {
+      if (isAttitudeDetail && m.category) {
+        const catCls = 'cat-' + (m.category || '').toLowerCase();
+        stats.push({ label: 'Score', val: `${Number(m.score).toFixed(2)} / 5  <span class="badge ${catCls}" style="margin-left:4px;font-size:9px;">${m.category}</span>` });
+      } else {
+        stats.push({ label: 'Score', val: `${m.score} / ${m.totalQuestions} (${m.percentage}%)` });
+      }
+    }
+    if (m.timeUsedSec != null && m.timeLimitSec != null) {
+      stats.push({ label: 'Tijd gebruikt', val: `${formatSec(m.timeUsedSec)} / ${formatSec(m.timeLimitSec)}` });
+    } else if (m.timeUsedSec != null) {
+      stats.push({ label: 'Duur', val: formatSec(m.timeUsedSec) });
+    }
+    if (!isAttitudeDetail) {
+      stats.push({ label: 'Inzending', val: m.autoSubmitted ? 'Auto (tijd verstreken)' : 'Manueel', cls: m.autoSubmitted ? 'warn' : '' });
+      stats.push({ label: 'Tab verlaten', val: `${m.awayCount || 0}× (${m.awaySec || 0}s)`, cls: (m.awayCount > 0) ? 'warn' : '' });
+      stats.push({ label: 'Online tijdens test', val: `${m.onlineCount || 0}× (${m.onlineSec || 0}s)`, cls: (m.onlineCount > 0) ? 'danger' : '' });
+    }
+    if (isAttitudeDetail && m.patternFlag) {
+      stats.push({ label: 'Antwoordpatroon', val: m.patternFlag === 'genuanceerd' ? 'Genuanceerd' : m.patternFlag === 'wenselijkheid' ? 'Mogelijke wenselijkheid' : 'Beperkte spreiding', cls: 'warn' });
+    }
     stats.push({ label: 'Datum', val: date });
 
     const statsHtml = stats.map(s => `
@@ -608,15 +641,23 @@
     }
     const headers = [
       'Datum (UTC)', 'Datum (lokaal)', 'Test', 'Kandidaat',
-      'Score', 'Totaal vragen', 'Percentage',
+      'Score', 'Totaal vragen', 'Percentage', 'Categorie',
       'Tijd gebruikt (s)', 'Tijd limiet (s)',
       'Auto submit', 'Tab verlaten (#)', 'Tab verlaten (s)',
-      'Online (#)', 'Online (s)', 'Submission ID'
+      'Online (#)', 'Online (s)',
+      'Pattern flag', 'Klantgerichtheid', 'Leerattitude', 'Flexibiliteit',
+      'Initiatief & Ondernemerschap', 'Stressbestendigheid', 'Integriteit', 'Doorzettingsvermogen',
+      'Submission ID'
     ];
+    const COMP_IDS = ['klantgerichtheid','leerattitude','flexibiliteit','initiatief_ondernemerschap','stressbestendigheid','integriteit','doorzettingsvermogen'];
     const rows = [headers];
     for (const r of items) {
       const m = r.meta || {};
       const dt = r.submittedAt ? new Date(r.submittedAt) : null;
+      const compMap = {};
+      if (Array.isArray(m.competencyScores)) {
+        m.competencyScores.forEach(c => { compMap[c.id] = c.score; });
+      }
       rows.push([
         dt ? dt.toISOString() : '',
         dt ? dt.toLocaleString('nl-BE') : '',
@@ -625,6 +666,7 @@
         m.score != null ? m.score : '',
         m.totalQuestions != null ? m.totalQuestions : '',
         m.percentage != null ? m.percentage + '%' : '',
+        m.category || '',
         m.timeUsedSec != null ? m.timeUsedSec : '',
         m.timeLimitSec != null ? m.timeLimitSec : '',
         m.autoSubmitted ? 'Ja' : 'Nee',
@@ -632,6 +674,14 @@
         m.awaySec != null ? m.awaySec : 0,
         m.onlineCount != null ? m.onlineCount : 0,
         m.onlineSec != null ? m.onlineSec : 0,
+        m.patternFlag || '',
+        compMap['klantgerichtheid'] ?? '',
+        compMap['leerattitude'] ?? '',
+        compMap['flexibiliteit'] ?? '',
+        compMap['initiatief_ondernemerschap'] ?? '',
+        compMap['stressbestendigheid'] ?? '',
+        compMap['integriteit'] ?? '',
+        compMap['doorzettingsvermogen'] ?? '',
         r.id || ''
       ]);
     }
