@@ -400,9 +400,8 @@
     <div class="validation-error" id="validationError">Gelieve alle vragen te beantwoorden voor je verder gaat.</div>
 
     <div class="btn-row">
-      <button class="btn btn-outline" id="prevBtn" onclick="goPrev()">Vorige</button>
+      <span class="submit-note" id="noBackNote">Eens je naar de volgende pagina gaat, kan je niet meer terugkeren.</span>
       <div class="right">
-        <span class="submit-note" id="submitNote"></span>
         <button class="btn" id="nextBtn" onclick="goNext()">Volgende</button>
       </div>
     </div>
@@ -678,23 +677,21 @@
       });
     });
 
-    // Buttons
-    document.getElementById('prevBtn').style.visibility = idx === 0 ? 'hidden' : 'visible';
+    // Button
     document.getElementById('nextBtn').textContent = idx === TOTAL_PAGES - 1 ? 'Bevestig & verstuur' : 'Volgende →';
+
+    // No-back notice — laatste pagina krijgt een aangepaste tekst
+    const noBackNote = document.getElementById('noBackNote');
+    if (noBackNote) {
+      noBackNote.textContent = idx === TOTAL_PAGES - 1
+        ? 'Dit is de laatste pagina. Eens je indient, is je test afgelopen en kan je niets meer aanpassen.'
+        : 'Eens je naar de volgende pagina gaat, kan je niet meer terugkeren.';
+    }
 
     // Top progress
     const totalAnswered = Object.keys(state.answers).length;
     document.getElementById('progressFill').style.width = (totalAnswered / QUESTION_ORDER.length * 100) + '%';
     document.getElementById('progressCount').textContent = totalAnswered + ' / ' + QUESTION_ORDER.length;
-
-    document.getElementById('submitNote').textContent = '';
-  }
-
-  function goPrev() {
-    if (state.currentPage <= 1) return;
-    state.currentPage--;
-    renderQuestionPage(state.currentPage - 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function goNext() {
