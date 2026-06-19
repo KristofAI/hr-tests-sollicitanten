@@ -97,6 +97,41 @@
   .start-error { font-size: 11px; color: var(--wrong); display: none; }
   .start-error.show { display: block; }
 
+  /* ── BU SELECTOR ── */
+  .bu-section { margin-top: 1.75rem; }
+  .bu-section label {
+    display: block; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--charcoal); margin-bottom: 12px;
+  }
+  .bu-chips {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .bu-chip {
+    background: #fff; color: var(--charcoal);
+    border: 1.5px solid var(--border-mid);
+    padding: 9px 16px;
+    font-family: var(--font-stack);
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .bu-chip:hover { background: var(--accent-bg); border-color: var(--charcoal); }
+  .bu-chip.selected {
+    background: var(--charcoal); color: #fff; border-color: var(--charcoal);
+  }
+
+  /* BU pill op picker scherm */
+  .picker-bu-pill {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    padding: 4px 12px;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    margin-top: 14px;
+  }
+
   /* ── BUTTONS ── */
   .btn {
     background: var(--charcoal); color: #fff; border: none;
@@ -244,20 +279,32 @@
 
 <div class="page-wrap">
 
-  <!-- ════════════════ SCHERM 1: NAAM INVOER ════════════════ -->
+  <!-- ════════════════ SCHERM 1: NAAM + BU INVOER ════════════════ -->
   <div class="screen active" id="screen-name">
     <div class="welcome-card">
-      <div class="tag">Selectieprocedure United HR</div>
-      <h1>HR<br><strong>Selectieprocedure</strong></h1>
-      <p>Welkom bij de HR selectieprocedure van United Consulting.<br>
-      Vul hieronder je naam in om verder te gaan. Je recruiter heeft aangegeven welke test(s) je vandaag moet afleggen.</p>
+      <div class="tag">United Consulting</div>
+      <h1><strong>Selectieprocedure</strong></h1>
+      <p>Welkom bij de selectieprocedure van United Consulting.<br>
+      Vul hieronder je gegevens in om verder te gaan. Je recruiter heeft aangegeven welke test(s) je vandaag moet afleggen.</p>
     </div>
 
     <div class="start-card">
       <label for="candidateName">Naam kandidaat</label>
       <input type="text" id="candidateName" placeholder="Voor- en achternaam" autocomplete="name" autofocus>
+
+      <div class="bu-section">
+        <label>Voor welke Business Unit solliciteer je?</label>
+        <div class="bu-chips" id="buChips">
+          <button type="button" class="bu-chip" data-bu="Finance">Finance</button>
+          <button type="button" class="bu-chip" data-bu="HR">HR</button>
+          <button type="button" class="bu-chip" data-bu="Supply Chain">Supply Chain</button>
+          <button type="button" class="bu-chip" data-bu="Business Support">Business Support</button>
+          <button type="button" class="bu-chip" data-bu="Marketing">Marketing</button>
+        </div>
+      </div>
+
       <div class="start-actions">
-        <span class="start-error" id="nameError">Vul je voor- en achternaam in.</span>
+        <span class="start-error" id="nameError">Vul je naam in én kies een Business Unit.</span>
         <button type="button" class="btn" onclick="goToPicker()">Verder →</button>
       </div>
     </div>
@@ -270,6 +317,7 @@
       <h1>Hallo,<br><strong id="pickerName">kandidaat</strong></h1>
       <p>Klik op de test die je recruiter jou heeft voorgesteld.<br>
       Je krijgt op de volgende pagina de instructies en kan daar de test starten.</p>
+      <div class="picker-bu-pill" id="pickerBuPill" style="display:none;">Business Unit: <span id="pickerBu"></span></div>
     </div>
 
     <a href="startup-attitude.html" class="featured-test">
@@ -281,7 +329,7 @@
       </div>
     </a>
 
-    <div class="test-grid">
+    <div class="test-grid" id="hrTestsGrid" data-bu-restrict="HR">
       <a href="hard-skills.html" class="test-card">
         <div class="test-card-label">HR · Hard Skills <span class="test-card-arrow">→</span></div>
         <div class="test-card-title">Sociale<br>Wetgeving</div>
@@ -295,7 +343,7 @@
     </div>
 
     <div class="change-name-row">
-      <button type="button" class="change-name-btn" onclick="changeCandidate()">Andere naam invoeren</button>
+      <button type="button" class="change-name-btn" onclick="changeCandidate()">Andere gegevens invoeren</button>
     </div>
   </div>
 
@@ -304,6 +352,8 @@
 
 <script>
   const STORAGE_KEY = 'hr-candidate-name';
+  const BU_KEY = 'hr-candidate-bu';
+  let selectedBu = '';
 
   // ════════════════ SERVICE WORKER ════════════════
   if ('serviceWorker' in navigator) {
@@ -319,25 +369,59 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // ════════════════ BU SELECTOR ════════════════
+  document.querySelectorAll('.bu-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.bu-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      selectedBu = chip.dataset.bu;
+      document.getElementById('nameError').classList.remove('show');
+    });
+  });
+
+  function applyPickerVisibility() {
+    const bu = sessionStorage.getItem(BU_KEY);
+    const isHR = bu === 'HR';
+    const hrGrid = document.getElementById('hrTestsGrid');
+    if (hrGrid) hrGrid.style.display = isHR ? '' : 'none';
+    const pill = document.getElementById('pickerBuPill');
+    const pillVal = document.getElementById('pickerBu');
+    if (bu && pill && pillVal) {
+      pillVal.textContent = bu;
+      pill.style.display = 'inline-block';
+    }
+  }
+
   function goToPicker() {
     const input = document.getElementById('candidateName');
     const name = input.value.trim();
     const err = document.getElementById('nameError');
     if (name.length < 2 || !name.includes(' ')) {
+      err.textContent = 'Vul je voor- en achternaam in.';
       err.classList.add('show');
       input.focus();
       return;
     }
+    if (!selectedBu) {
+      err.textContent = 'Kies je Business Unit.';
+      err.classList.add('show');
+      return;
+    }
     err.classList.remove('show');
     sessionStorage.setItem(STORAGE_KEY, name);
+    sessionStorage.setItem(BU_KEY, selectedBu);
     document.getElementById('pickerName').textContent = name;
+    applyPickerVisibility();
     showScreen('picker');
   }
 
   function changeCandidate() {
     sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(BU_KEY);
+    selectedBu = '';
     const input = document.getElementById('candidateName');
     input.value = '';
+    document.querySelectorAll('.bu-chip').forEach(c => c.classList.remove('selected'));
     showScreen('name');
     setTimeout(() => input.focus(), 200);
   }
@@ -349,10 +433,16 @@
 
   // ════════════════ BIJ PAGE LOAD ════════════════
   window.addEventListener('load', () => {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      document.getElementById('pickerName').textContent = stored;
-      document.getElementById('candidateName').value = stored;
+    const storedName = sessionStorage.getItem(STORAGE_KEY);
+    const storedBu = sessionStorage.getItem(BU_KEY);
+    if (storedName && storedBu) {
+      selectedBu = storedBu;
+      document.getElementById('pickerName').textContent = storedName;
+      document.getElementById('candidateName').value = storedName;
+      document.querySelectorAll('.bu-chip').forEach(c => {
+        if (c.dataset.bu === storedBu) c.classList.add('selected');
+      });
+      applyPickerVisibility();
       showScreen('picker');
     }
   });

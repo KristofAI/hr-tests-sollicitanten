@@ -918,8 +918,10 @@
       ? `Online tijdens test: ${online.count} keer (totaal ±${online.sec}s) — mogelijke opzoekingen`
       : 'Online tijdens test: 0 keer (volledig offline)';
 
+    const bu = sessionStorage.getItem('hr-candidate-bu') || '—';
     const textLines = [
       `Kandidaat: ${candidateName}`,
+      `Business Unit: ${bu}`,
       `Test: ${TEST_NAME} (Sociale Wetgeving)`,
       `Datum: ${date}`,
       `Tijd gebruikt: ${timeUsedStr}`,
@@ -952,7 +954,7 @@
         <div style="background:#434A55;color:#fff;padding:24px;">
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:0.6;">United Consulting™ · HR Selectieprocedure</div>
           <div style="font-size:20px;font-weight:700;margin-top:8px;">${TEST_NAME} — ${escapeHtml(candidateName)}</div>
-          <div style="font-size:13px;opacity:0.7;margin-top:4px;">${date}</div>
+          <div style="font-size:13px;opacity:0.7;margin-top:4px;">${date} &nbsp;·&nbsp; Business Unit: <strong>${escapeHtml(bu)}</strong></div>
           <div style="font-size:12px;opacity:0.75;margin-top:8px;">Tijd gebruikt: <strong>${timeUsedStr}</strong> &nbsp;·&nbsp; ${submitMode}</div>
           <div style="margin-top:16px;font-size:30px;font-weight:700;">${score} / ${TOTAL} <span style="font-size:14px;opacity:0.6;font-weight:400;">(${pct}%)</span></div>
         </div>
@@ -974,6 +976,7 @@
       </div>`;
 
     const structuredMeta = {
+      businessUnit: sessionStorage.getItem('hr-candidate-bu') || '',
       score: score,
       totalQuestions: TOTAL,
       percentage: pct,

@@ -527,7 +527,7 @@
         <tr data-id="${r.id}" onclick="openDetail('${r.id}')" class="${selectedId === r.id ? 'selected' : ''}">
           <td class="num-cell">${date}</td>
           <td>${testBadge}</td>
-          <td class="name-cell">${escapeHtml(r.candidateName)}</td>
+          <td class="name-cell">${escapeHtml(r.candidateName)}${m.businessUnit ? `<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-top:2px;">${escapeHtml(m.businessUnit)}</div>` : ''}</td>
           <td class="num-cell">${score}</td>
           <td class="num-cell">${time}</td>
           <td>${awayBadge}</td>
@@ -550,6 +550,7 @@
 
     const isAttitudeDetail = /attitude|startup/i.test(r.testName);
     const stats = [];
+    if (m.businessUnit) stats.push({ label: 'Business Unit', val: escapeHtml(m.businessUnit) });
     if (m.score != null) {
       if (isAttitudeDetail && m.category) {
         const catCls = 'cat-' + (m.category || '').toLowerCase();
@@ -640,7 +641,7 @@
       return;
     }
     const headers = [
-      'Datum (UTC)', 'Datum (lokaal)', 'Test', 'Kandidaat',
+      'Datum (UTC)', 'Datum (lokaal)', 'Test', 'Kandidaat', 'Business Unit',
       'Score', 'Totaal vragen', 'Percentage', 'Categorie',
       'Tijd gebruikt (s)', 'Tijd limiet (s)',
       'Auto submit', 'Tab verlaten (#)', 'Tab verlaten (s)',
@@ -663,6 +664,7 @@
         dt ? dt.toLocaleString('nl-BE') : '',
         r.testName || '',
         r.candidateName || '',
+        m.businessUnit || '',
         m.score != null ? m.score : '',
         m.totalQuestions != null ? m.totalQuestions : '',
         m.percentage != null ? m.percentage + '%' : '',
