@@ -279,20 +279,22 @@
   .email-status.error { color: rgba(255,180,160,0.8); }
   .email-status.waiting { color: rgba(245,176,65,0.9); }
 
-  .result-actions {
-    margin-top: 1.5rem;
-    display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
+  /* Back-naar-home knop binnen de donkere resultaatkaart */
+  .results-card .home-cta {
+    margin-top: 1.75rem; padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    text-align: center;
   }
-  .btn-link {
-    display: inline-block; background: transparent; color: var(--charcoal);
-    border: 1.5px solid var(--border-mid);
-    padding: 12px 28px;
-    font-size: 11px; text-transform: uppercase;
-    letter-spacing: 2.5px; text-decoration: none;
-    font-weight: 700; font-family: var(--font-stack);
-    transition: all 0.2s; cursor: pointer;
+  .results-card .home-cta .btn-home {
+    display: inline-block;
+    background: #fff; color: var(--charcoal);
+    border: none; padding: 14px 32px;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2.5px;
+    text-decoration: none; font-family: var(--font-stack);
+    transition: background 0.15s; cursor: pointer;
   }
-  .btn-link:hover { border-color: var(--charcoal); background: var(--accent-bg); }
+  .results-card .home-cta .btn-home:hover { background: var(--accent-bg); }
 
   /* ── FOOTER ── */
   .footer {
@@ -414,9 +416,9 @@
       <h2>Bedankt,<br><strong id="rName">kandidaat</strong></h2>
       <div class="r-message">Je antwoorden zijn goed aangekomen. Ze geven ons een fijn startpunt voor ons eerste gesprek — zo kunnen we die tijd samen benutten om er echt de diepte in te gaan.<br><br>We zien je graag binnenkort. Tot dan!</div>
       <div class="email-status" id="emailStatus"></div>
-    </div>
-    <div class="result-actions">
-      <a href="index.html" class="btn-link">← Terug naar startscherm</a>
+      <div class="home-cta">
+        <a href="index.html" class="btn-home">← Terug naar startpagina</a>
+      </div>
     </div>
   </div>
 
@@ -1064,6 +1066,9 @@
           <h2>Je antwoorden wachten op verzending</h2>
           <div class="r-message">Je hebt deze test eerder voltooid maar er was toen geen internetverbinding. We proberen het nu automatisch opnieuw zodra je online bent.</div>
           <div class="email-status" id="emailStatus"></div>
+          <div class="home-cta">
+            <a href="index.html" class="btn-home">← Terug naar startpagina</a>
+          </div>
         `;
       }
       showScreen('results');
