@@ -207,13 +207,13 @@
     line-height: 1.55; margin-bottom: 18px;
   }
   .likert {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
   }
   .likert label {
     display: flex; flex-direction: column; align-items: center;
-    padding: 10px 6px; border: 1px solid var(--border);
+    padding: 6px 4px; border: 1px solid var(--border);
     cursor: pointer; text-align: center;
-    font-size: 10.5px; line-height: 1.3;
+    font-size: 9.5px; line-height: 1.25;
     color: var(--text); background: #FCFCFD;
     transition: all 0.15s;
     position: relative;
@@ -221,7 +221,7 @@
   .likert label:hover { border-color: var(--charcoal); color: var(--charcoal); background: var(--accent-bg); }
   .likert input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
   .likert label .scale-num {
-    font-size: 20px; font-weight: 300; margin-bottom: 4px;
+    font-size: 14px; font-weight: 400; margin-bottom: 2px;
     color: var(--charcoal);
   }
   .likert label.selected {
@@ -312,9 +312,9 @@
     .gdpr-card { padding: 1.25rem; }
     .start-card { padding: 1.25rem; }
     .question-card { padding: 1.25rem; }
-    .likert { gap: 4px; }
-    .likert label { padding: 8px 4px; font-size: 9.5px; }
-    .likert label .scale-num { font-size: 16px; }
+    .likert { gap: 3px; }
+    .likert label { padding: 5px 3px; font-size: 8.5px; }
+    .likert label .scale-num { font-size: 12px; }
     .topbar-progress { display: none; }
   }
 </style>
@@ -558,7 +558,7 @@
     'k7','la7','fl7','io7','sb7','ig7','dv7',
     'k8','la8','fl8','io8','sb8','ig8','dv8'
   ];
-  const ITEMS_PER_PAGE = 4;
+  const ITEMS_PER_PAGE = 10;
   const TOTAL_PAGES = Math.ceil(QUESTION_ORDER.length / ITEMS_PER_PAGE);
 
   const ALL_ITEMS = COMPETENCIES.flatMap(c => c.items.map(i => ({ ...i, compId: c.id })));
