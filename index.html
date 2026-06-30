@@ -245,6 +245,31 @@
   }
   .test-card:hover .test-card-arrow { transform: translateX(4px); }
 
+  /* ── EMPTY-PHASE MESSAGE ── */
+  .empty-phase {
+    background: #fff; border: 1px solid var(--border);
+    border-left: 4px solid var(--charcoal);
+    padding: 2.5rem 2rem; text-align: center;
+    margin-bottom: 1rem;
+  }
+  .empty-phase-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 56px; height: 56px;
+    border: 2px solid var(--charcoal);
+    color: var(--charcoal);
+    font-size: 26px; font-weight: 300;
+    margin-bottom: 1.25rem;
+  }
+  .empty-phase h3 {
+    font-size: 16px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--charcoal); margin-bottom: 12px;
+  }
+  .empty-phase p {
+    font-size: 13px; color: var(--text);
+    line-height: 1.6; max-width: 480px; margin: 0 auto;
+  }
+
   /* ── CHANGE-NAME LINK ── */
   .change-name-row {
     display: flex; justify-content: center;
@@ -342,6 +367,12 @@
       </a>
     </div>
 
+    <div class="empty-phase" id="emptyPhaseMsg" style="display:none;">
+      <div class="empty-phase-icon">✓</div>
+      <h3>Je tests zijn voltooid</h3>
+      <p>Bedankt voor je deelname. Een recruiter neemt binnenkort opnieuw contact met je op om het verdere verloop van de procedure te bespreken.</p>
+    </div>
+
     <div class="change-name-row">
       <button type="button" class="change-name-btn" onclick="changeCandidate()">Andere gegevens invoeren</button>
     </div>
@@ -353,6 +384,8 @@
 <script>
   const STORAGE_KEY = 'hr-candidate-name';
   const BU_KEY = 'hr-candidate-bu';
+  const PHASE_KEY = 'hr-candidate-phase';
+  const API_BASE = 'https://europe-west1-uc-hr-test-sollicitanten.cloudfunctions.net/hr-tests-mailer';
   let selectedBu = '';
 
   // ════════════════ SERVICE WORKER ════════════════
@@ -381,21 +414,74 @@
 
   function applyPickerVisibility() {
     const bu = sessionStorage.getItem(BU_KEY);
+    const phase = sessionStorage.getItem(PHASE_KEY) || 'interview-1';
     const isHR = bu === 'HR';
+    const isPhase2 = phase === 'interview-2';
+
+    const featured = document.querySelector('.featured-test');
     const hrGrid = document.getElementById('hrTestsGrid');
-    if (hrGrid) hrGrid.style.display = isHR ? '' : 'none';
+    const emptyMsg = document.getElementById('emptyPhaseMsg');
+
+    // Fase 1: alleen Startup Attitude (voor alle BUs)
+    // Fase 2 + HR: alleen Hard + Soft Skills (Startup Attitude verborgen)
+    // Fase 2 + niet-HR: niets meer — "alles afgerond" message
+    if (!isPhase2) {
+      if (featured) featured.style.display = '';
+      if (hrGrid) hrGrid.style.display = 'none';
+      if (emptyMsg) emptyMsg.style.display = 'none';
+    } else if (isHR) {
+      if (featured) featured.style.display = 'none';
+      if (hrGrid) hrGrid.style.display = '';
+      if (emptyMsg) emptyMsg.style.display = 'none';
+    } else {
+      if (featured) featured.style.display = 'none';
+      if (hrGrid) hrGrid.style.display = 'none';
+      if (emptyMsg) emptyMsg.style.display = '';
+    }
+
+    // BU + fase pill
     const pill = document.getElementById('pickerBuPill');
     const pillVal = document.getElementById('pickerBu');
     if (bu && pill && pillVal) {
-      pillVal.textContent = bu;
+      const phaseLabel = phase === 'interview-2' ? 'Interview 2' : 'Interview 1';
+      pillVal.textContent = bu + ' · ' + phaseLabel;
       pill.style.display = 'inline-block';
     }
   }
 
-  function goToPicker() {
+  async function lookupCandidatePhase(name, bu) {
+    try {
+      const res = await fetch(API_BASE + '/candidate/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, bu })
+      });
+      if (!res.ok) return 'interview-1';
+      const data = await res.json();
+      return data.phase || 'interview-1';
+    } catch (e) {
+      console.warn('Phase lookup faalde, default to interview-1:', e);
+      return 'interview-1';
+    }
+  }
+
+  async function upsertCandidate(name, bu) {
+    try {
+      await fetch(API_BASE + '/candidate/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, bu })
+      });
+    } catch (e) {
+      console.warn('Candidate upsert faalde:', e);
+    }
+  }
+
+  async function goToPicker() {
     const input = document.getElementById('candidateName');
     const name = input.value.trim();
     const err = document.getElementById('nameError');
+    const btn = document.querySelector('#screen-name .btn');
     if (name.length < 2 || !name.includes(' ')) {
       err.textContent = 'Vul je voor- en achternaam in.';
       err.classList.add('show');
@@ -408,8 +494,17 @@
       return;
     }
     err.classList.remove('show');
+
+    // Lookup phase via backend; first-time visitors get default interview-1
+    if (btn) { btn.disabled = true; btn.textContent = 'Even checken...'; }
+    const phase = await lookupCandidatePhase(name, selectedBu);
+    // Register the candidate (no-op if already exists)
+    upsertCandidate(name, selectedBu);
+    if (btn) { btn.disabled = false; btn.textContent = 'Verder →'; }
+
     sessionStorage.setItem(STORAGE_KEY, name);
     sessionStorage.setItem(BU_KEY, selectedBu);
+    sessionStorage.setItem(PHASE_KEY, phase);
     document.getElementById('pickerName').textContent = name;
     applyPickerVisibility();
     showScreen('picker');
@@ -418,6 +513,7 @@
   function changeCandidate() {
     sessionStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem(BU_KEY);
+    sessionStorage.removeItem(PHASE_KEY);
     selectedBu = '';
     const input = document.getElementById('candidateName');
     input.value = '';
@@ -432,7 +528,7 @@
   });
 
   // ════════════════ BIJ PAGE LOAD ════════════════
-  window.addEventListener('load', () => {
+  window.addEventListener('load', async () => {
     const storedName = sessionStorage.getItem(STORAGE_KEY);
     const storedBu = sessionStorage.getItem(BU_KEY);
     if (storedName && storedBu) {
@@ -442,6 +538,9 @@
       document.querySelectorAll('.bu-chip').forEach(c => {
         if (c.dataset.bu === storedBu) c.classList.add('selected');
       });
+      // Re-fetch fase elke load — recruiter kan ze hebben gepromoveerd sinds vorige sessie
+      const phase = await lookupCandidatePhase(storedName, storedBu);
+      sessionStorage.setItem(PHASE_KEY, phase);
       applyPickerVisibility();
       showScreen('picker');
     }

@@ -116,6 +116,42 @@
   .btn:hover { background: var(--charcoal-dark); }
   .btn:disabled { background: var(--border-mid); cursor: not-allowed; }
 
+  /* ── TABS ── */
+  .tabs {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  .tab {
+    background: none; border: none; padding: 14px 24px;
+    font-family: var(--font-stack); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--muted); cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--charcoal); }
+  .tab.active {
+    color: var(--charcoal); border-bottom-color: var(--charcoal);
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── PHASE BADGE & PROMOTE BUTTON ── */
+  .badge.phase-1 { background: #e6efe9; color: #2e7d52; }
+  .badge.phase-2 { background: #e6eef5; color: #3F7BB6; }
+  .btn-promote {
+    background: var(--charcoal); color: #fff; border: none;
+    padding: 6px 14px; font-family: var(--font-stack);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-promote:hover { background: var(--charcoal-dark); }
+  .btn-promote.demote { background: transparent; color: var(--charcoal); border: 1px solid var(--border-mid); }
+  .btn-promote.demote:hover { background: var(--accent-bg); border-color: var(--charcoal); }
+  .btn-promote:disabled { opacity: 0.5; cursor: not-allowed; }
+
   /* ── DASHBOARD ── */
   .dashboard-header {
     display: flex; justify-content: space-between; align-items: flex-end;
@@ -304,7 +340,7 @@
   </div>
   <div class="topbar-actions" id="topbarActions" style="display:none;">
     <button class="topbar-btn" onclick="exportCsv()">⬇ Export CSV</button>
-    <button class="topbar-btn" onclick="loadResults()">↻ Refresh</button>
+    <button class="topbar-btn" onclick="refreshActive()">↻ Refresh</button>
     <button class="topbar-btn" onclick="logout()">Logout</button>
   </div>
 </div>
@@ -329,6 +365,14 @@
 
   <!-- ════════════════ DASHBOARD ════════════════ -->
   <div class="screen" id="screen-dashboard">
+    <div class="tabs">
+      <button class="tab active" data-tab="results" onclick="setTab('results')">Resultaten</button>
+      <button class="tab" data-tab="candidates" onclick="setTab('candidates')">Kandidaten</button>
+    </div>
+
+    <!-- TAB: RESULTATEN -->
+    <div class="tab-content active" id="tab-results">
+
     <div class="dashboard-header">
       <div>
         <h2>Test<br><strong>Resultaten</strong></h2>
@@ -376,6 +420,45 @@
         <button class="btn-danger" id="deleteBtn" onclick="deleteSelected()">🗑 Verwijder deze entry</button>
       </div>
     </div>
+
+    </div><!-- /tab-results -->
+
+    <!-- TAB: KANDIDATEN -->
+    <div class="tab-content" id="tab-candidates">
+      <div class="dashboard-header">
+        <div>
+          <h2>Kandidaten<br><strong>per fase</strong></h2>
+          <div class="meta" id="candidatesMeta">— kandidaten</div>
+        </div>
+      </div>
+
+      <div class="filters">
+        <span class="filter-label">Filter</span>
+        <button class="chip active" data-cfilter="all" onclick="setCFilter('all')">Alle</button>
+        <button class="chip" data-cfilter="interview-1" onclick="setCFilter('interview-1')">Interview 1</button>
+        <button class="chip" data-cfilter="interview-2" onclick="setCFilter('interview-2')">Interview 2</button>
+        <input class="filter-search" type="search" id="candidateSearch" placeholder="Zoek op naam..." oninput="renderCandidatesTable()">
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Naam</th>
+              <th>Business Unit</th>
+              <th>Fase</th>
+              <th>Aangemaakt</th>
+              <th>Laatst gezien</th>
+              <th style="text-align:right;">Actie</th>
+            </tr>
+          </thead>
+          <tbody id="candidatesBody">
+            <tr><td colspan="6" class="loading">Kandidaten laden...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /tab-candidates -->
+
   </div>
 
   <div class="footer">United Consulting™ &nbsp;·&nbsp; HR Tests Admin</div>
@@ -386,11 +469,16 @@
   const API_BASE = 'https://europe-west1-uc-hr-test-sollicitanten.cloudfunctions.net/hr-tests-mailer';
   const RESULTS_URL = API_BASE + '/results';
   const DELETE_URL = API_BASE + '/delete-result';
+  const CANDIDATES_URL = API_BASE + '/candidates';
+  const SET_PHASE_URL = API_BASE + '/candidate/set-phase';
   const PWD_KEY = 'hr-admin-pwd';
 
   let allResults = [];
+  let allCandidates = [];
   let currentFilter = 'all';
+  let currentCFilter = 'all';
   let selectedId = null;
+  let activeTab = 'results';
 
   // ════════════════ SCREEN NAV ════════════════
   function showScreen(name) {
@@ -426,6 +514,118 @@
     document.getElementById('topbarActions').style.display = 'flex';
     showScreen('dashboard');
     renderTable();
+    loadCandidates();
+  }
+
+  // ════════════════ TAB SWITCHING ════════════════
+  function setTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+    if (tab === 'candidates') loadCandidates();
+  }
+
+  function refreshActive() {
+    if (activeTab === 'candidates') loadCandidates();
+    else loadResults();
+  }
+
+  // ════════════════ CANDIDATES ════════════════
+  async function loadCandidates() {
+    const pwd = sessionStorage.getItem(PWD_KEY);
+    if (!pwd) return;
+    const body = document.getElementById('candidatesBody');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="6" class="loading">Kandidaten laden...</td></tr>';
+    try {
+      const res = await fetch(CANDIDATES_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': pwd }
+      });
+      if (res.status === 401) { logout(); return; }
+      if (!res.ok) throw new Error('Server fout ' + res.status);
+      const data = await res.json();
+      allCandidates = data.items || [];
+      renderCandidatesTable();
+    } catch (e) {
+      body.innerHTML = `<tr><td colspan="6" class="loading">Kon kandidaten niet laden: ${escapeHtml(e.message)}</td></tr>`;
+    }
+  }
+
+  function setCFilter(f) {
+    currentCFilter = f;
+    document.querySelectorAll('.chip[data-cfilter]').forEach(c => {
+      c.classList.toggle('active', c.dataset.cfilter === f);
+    });
+    renderCandidatesTable();
+  }
+
+  function applyCandidateFilters(items) {
+    const search = (document.getElementById('candidateSearch')?.value || '').toLowerCase().trim();
+    return items.filter(c => {
+      if (currentCFilter !== 'all' && c.phase !== currentCFilter) return false;
+      if (search && !(c.name || '').toLowerCase().includes(search)) return false;
+      return true;
+    });
+  }
+
+  function renderCandidatesTable() {
+    const body = document.getElementById('candidatesBody');
+    if (!body) return;
+    const items = applyCandidateFilters(allCandidates);
+    const metaEl = document.getElementById('candidatesMeta');
+    if (metaEl) metaEl.textContent = `${items.length} van ${allCandidates.length} kandidaten`;
+
+    if (items.length === 0) {
+      body.innerHTML = '<tr><td colspan="6" class="loading">Geen kandidaten gevonden.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = items.map(c => {
+      const phaseLabel = c.phase === 'interview-2' ? 'Interview 2' : 'Interview 1';
+      const phaseCls = c.phase === 'interview-2' ? 'phase-2' : 'phase-1';
+      const created = c.createdAt ? new Date(c.createdAt).toLocaleString('nl-BE', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+      const lastSeen = c.lastSeenAt ? new Date(c.lastSeenAt).toLocaleString('nl-BE', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+      const promoteBtn = c.phase === 'interview-1'
+        ? `<button class="btn-promote" onclick="promoteCandidate('${escapeAttr(c.id)}', 'interview-2', this)">→ Interview 2</button>`
+        : `<button class="btn-promote demote" onclick="promoteCandidate('${escapeAttr(c.id)}', 'interview-1', this)">← Terug naar Interview 1</button>`;
+      return `
+        <tr data-id="${c.id}">
+          <td class="name-cell">${escapeHtml(c.name)}</td>
+          <td>${escapeHtml(c.bu || '—')}</td>
+          <td><span class="badge ${phaseCls}">${phaseLabel}</span></td>
+          <td class="num-cell">${created}</td>
+          <td class="num-cell">${lastSeen}</td>
+          <td style="text-align:right;">${promoteBtn}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  async function promoteCandidate(id, newPhase, btn) {
+    const pwd = sessionStorage.getItem(PWD_KEY);
+    if (!pwd) { logout(); return; }
+    const original = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Bezig...'; }
+    try {
+      const res = await fetch(SET_PHASE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': pwd },
+        body: JSON.stringify({ id, phase: newPhase })
+      });
+      if (res.status === 401) { logout(); return; }
+      if (!res.ok) throw new Error('Server fout ' + res.status);
+      // Update local state + re-render
+      const c = allCandidates.find(x => x.id === id);
+      if (c) c.phase = newPhase;
+      renderCandidatesTable();
+    } catch (e) {
+      alert('Fase wijzigen mislukt: ' + e.message);
+      if (btn) { btn.disabled = false; btn.textContent = original; }
+    }
+  }
+
+  function escapeAttr(s) {
+    return String(s == null ? '' : s).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
   }
 
   function logout() {
@@ -734,7 +934,7 @@
       if (!res.ok) { logout(); return; }
       const data = await res.json();
       allResults = data.items || [];
-      onLoginSuccess();
+      onLoginSuccess(); // dit laadt nu ook candidates
     } catch (e) { /* stay on login */ }
   });
 </script>
