@@ -150,6 +150,12 @@
   .btn-promote:hover { background: var(--charcoal-dark); }
   .btn-promote.demote { background: transparent; color: var(--charcoal); border: 1px solid var(--border-mid); }
   .btn-promote.demote:hover { background: var(--accent-bg); border-color: var(--charcoal); }
+  .btn-promote.delete {
+    background: transparent; color: var(--wrong);
+    border: 1px solid var(--border-mid);
+    padding: 6px 10px;
+  }
+  .btn-promote.delete:hover { background: var(--wrong-bg); border-color: var(--wrong); }
   .btn-promote:disabled { opacity: 0.5; cursor: not-allowed; }
 
   /* ── DASHBOARD ── */
@@ -417,7 +423,8 @@
       </div>
       <div class="detail-body" id="detailBody"></div>
       <div class="detail-footer">
-        <button class="btn-danger" id="deleteBtn" onclick="deleteSelected()">🗑 Verwijder deze entry</button>
+        <button class="btn-danger" id="deleteCandidateFromResultBtn" onclick="deleteCandidateFromResult()" style="margin-right:auto;">🗑 Verwijder volledige kandidaat</button>
+        <button class="btn-danger" id="deleteBtn" onclick="deleteSelected()">🗑 Verwijder enkel deze entry</button>
       </div>
     </div>
 
@@ -471,6 +478,7 @@
   const DELETE_URL = API_BASE + '/delete-result';
   const CANDIDATES_URL = API_BASE + '/candidates';
   const SET_PHASE_URL = API_BASE + '/candidate/set-phase';
+  const DELETE_CANDIDATE_URL = API_BASE + '/delete-candidate';
   const PWD_KEY = 'hr-admin-pwd';
 
   let allResults = [];
@@ -589,6 +597,7 @@
       const promoteBtn = c.phase === 'interview-1'
         ? `<button class="btn-promote" onclick="promoteCandidate('${escapeAttr(c.id)}', 'interview-2', this)">→ Interview 2</button>`
         : `<button class="btn-promote demote" onclick="promoteCandidate('${escapeAttr(c.id)}', 'interview-1', this)">← Terug naar Interview 1</button>`;
+      const deleteBtn = `<button class="btn-promote delete" onclick="deleteCandidate('${escapeAttr(c.id)}', '${escapeAttr(c.name)}', this)" title="Verwijder kandidaat + alle resultaten">🗑</button>`;
       return `
         <tr data-id="${c.id}">
           <td class="name-cell">${escapeHtml(c.name)}</td>
@@ -596,9 +605,48 @@
           <td><span class="badge ${phaseCls}">${phaseLabel}</span></td>
           <td class="num-cell">${created}</td>
           <td class="num-cell">${lastSeen}</td>
-          <td style="text-align:right;">${promoteBtn}</td>
+          <td style="text-align:right;white-space:nowrap;">${promoteBtn} ${deleteBtn}</td>
         </tr>`;
     }).join('');
+  }
+
+  async function deleteCandidateFromResult() {
+    if (!selectedId) return;
+    const r = allResults.find(x => x.id === selectedId);
+    if (!r) return;
+    const name = (r.candidateName || '').trim();
+    const bu = (r.meta && r.meta.businessUnit) || '';
+    if (!name) { alert('Kandidaat-naam ontbreekt in deze entry — verwijderen niet mogelijk vanaf hier.'); return; }
+    // Compute deterministic candidate id (zelfde normalisatie als de backend)
+    const norm = s => (s || '').trim().toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    const candidateId = (norm(name) + '__' + norm(bu)).slice(0, 200);
+    await deleteCandidate(candidateId, name, document.getElementById('deleteCandidateFromResultBtn'));
+  }
+
+  async function deleteCandidate(id, name, btn) {
+    if (!confirm(`Weet je zeker dat je deze kandidaat wil verwijderen?\n\n${name}\n\nDit verwijdert de kandidaat ÉN al hun testresultaten. Deze actie kan niet ongedaan gemaakt worden.`)) return;
+    const pwd = sessionStorage.getItem(PWD_KEY);
+    if (!pwd) { logout(); return; }
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    try {
+      const res = await fetch(DELETE_CANDIDATE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': pwd },
+        body: JSON.stringify({ id })
+      });
+      if (res.status === 401) { logout(); return; }
+      if (!res.ok) throw new Error('Server fout ' + res.status);
+      const data = await res.json();
+      console.log(`Deleted ${data.resultsDeleted || 0} test-results along with candidate ${id}`);
+      // Lokale state opkuisen: kandidaat weg + hertrek de test-results vanaf server
+      allCandidates = allCandidates.filter(x => x.id !== id);
+      renderCandidatesTable();
+      closeDetail();
+      loadResults(); // refresh resultaten zodat hun verwijderde rijen ook weg zijn
+    } catch (e) {
+      alert('Verwijderen mislukt: ' + e.message);
+      if (btn) { btn.disabled = false; btn.textContent = '🗑'; }
+    }
   }
 
   async function promoteCandidate(id, newPhase, btn) {
